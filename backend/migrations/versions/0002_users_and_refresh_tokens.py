@@ -49,6 +49,7 @@ def upgrade() -> None:
             server_default=sa.func.now(),
         ),
         sa.Column("revoked_at", sa.DateTime(timezone=True), nullable=True),
+        sa.Column("revoked_reason", sa.String(32), nullable=True),
         sa.ForeignKeyConstraint(
             ["user_id"],
             ["common.users.id"],

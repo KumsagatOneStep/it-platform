@@ -8,7 +8,7 @@ from app.core.audit import record_audit
 from app.core.db import constraint_name
 from app.core.errors import ConflictError, ValidationFailedError
 from app.modules.users_auth.models import User, UserRole
-from app.modules.users_auth.passwords import hash_password, validate_password_strength
+from app.modules.users_auth.passwords import hash_password_async, validate_password_strength
 
 
 def normalize_email(email: str) -> str:
@@ -46,7 +46,7 @@ async def create_user(
     user = User(
         email=normalize_email(email),
         full_name=full_name.strip(),
-        password_hash=hash_password(password),
+        password_hash=await hash_password_async(password),
         role=role,
         department_id=department_id,
         must_change_password=must_change_password,

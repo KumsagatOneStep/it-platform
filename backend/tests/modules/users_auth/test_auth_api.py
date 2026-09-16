@@ -194,12 +194,55 @@ async def test_change_password_revokes_other_sessions(
         json={"current_password": DEFAULT_PASSWORD, "new_password": "Brand-New-Pass-2"},
     )
     assert changed.status_code == 200
+    new_session_refresh = changed.cookies["refresh_token"]
 
     client.cookies.clear()
     response = await client.post(
         "/api/auth/refresh", headers={"Cookie": f"refresh_token={other_session_refresh}"}
     )
     assert response.status_code == 401
+
+    # The brand-new session issued by change-password itself must not be revoked.
+    client.cookies.clear()
+    still_valid = await client.post(
+        "/api/auth/refresh", headers={"Cookie": f"refresh_token={new_session_refresh}"}
+    )
+    assert still_valid.status_code == 200
+
+
+async def test_logout_does_not_revoke_other_sessions(
+    client: AsyncClient, db_session: AsyncSession
+) -> None:
+    user = await make_user(db_session)
+    first = await client.post(
+        "/api/auth/login", json={"email": user.email, "password": DEFAULT_PASSWORD}
+    )
+    first_refresh = first.cookies["refresh_token"]
+
+    client.cookies.clear()
+    second = await client.post(
+        "/api/auth/login", json={"email": user.email, "password": DEFAULT_PASSWORD}
+    )
+    second_refresh = second.cookies["refresh_token"]
+
+    client.cookies.clear()
+    logout = await client.post(
+        "/api/auth/logout", headers={"Cookie": f"refresh_token={first_refresh}"}
+    )
+    assert logout.status_code == 204
+
+    client.cookies.clear()
+    replayed = await client.post(
+        "/api/auth/refresh", headers={"Cookie": f"refresh_token={first_refresh}"}
+    )
+    assert replayed.status_code == 401
+
+    # A different, still-active session of the same user must be unaffected.
+    client.cookies.clear()
+    still_valid = await client.post(
+        "/api/auth/refresh", headers={"Cookie": f"refresh_token={second_refresh}"}
+    )
+    assert still_valid.status_code == 200
 
 
 async def test_change_password_with_wrong_current_password(

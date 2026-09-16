@@ -1,6 +1,7 @@
 import secrets
 from functools import cache
 
+import anyio.to_thread
 from argon2 import PasswordHasher
 from argon2.exceptions import InvalidHashError, VerificationError, VerifyMismatchError
 
@@ -30,6 +31,20 @@ def _dummy_hash() -> str:
 def dummy_verify(password: str) -> None:
     """Выравнивает время ответа, когда пользователь не найден."""
     verify_password(_dummy_hash(), password)
+
+
+async def hash_password_async(password: str) -> str:
+    """Хэширование Argon2id в отдельном потоке, чтобы не блокировать event loop."""
+    return await anyio.to_thread.run_sync(hash_password, password)
+
+
+async def verify_password_async(password_hash: str, password: str) -> bool:
+    result: bool = await anyio.to_thread.run_sync(verify_password, password_hash, password)
+    return result
+
+
+async def dummy_verify_async(password: str) -> None:
+    await anyio.to_thread.run_sync(dummy_verify, password)
 
 
 def validate_password_strength(password: str) -> None:
