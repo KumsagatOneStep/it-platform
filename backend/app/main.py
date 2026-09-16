@@ -6,9 +6,11 @@ from app.core.errors import register_error_handlers
 from app.core.health import router as health_router
 from app.core.logging import configure_logging
 from app.core.middleware import RequestIdMiddleware
+from app.wiring import register_event_handlers
 
 
 def create_app() -> FastAPI:
+    register_event_handlers()
     settings = get_settings()
     if settings.app_env != "test":
         configure_logging()
