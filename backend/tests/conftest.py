@@ -21,7 +21,9 @@ from app.core.config import get_settings
 from app.core.db import get_session
 from app.core.redis import get_redis, resolve
 from app.main import create_app
+from app.modules.users_auth.models import User, UserRole
 from tests.db_utils import alembic_config
+from tests.factories import login, make_user
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -78,3 +80,15 @@ async def client(app: FastAPI) -> AsyncIterator[AsyncClient]:
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://testserver") as http_client:
         yield http_client
+
+
+@pytest.fixture
+async def admin_user(db_session: AsyncSession) -> User:
+    return await make_user(
+        db_session, email="admin@company.ru", full_name="Админов Админ", role=UserRole.ADMIN
+    )
+
+
+@pytest.fixture
+async def admin_headers(client: AsyncClient, admin_user: User) -> dict[str, str]:
+    return await login(client, admin_user.email)

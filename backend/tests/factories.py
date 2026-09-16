@@ -1,6 +1,7 @@
 import itertools
 from functools import cache
 
+from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.modules.users_auth.models import User, UserRole
@@ -42,3 +43,11 @@ async def make_user(
     session.add(user)
     await session.flush()
     return user
+
+
+async def login(
+    client: AsyncClient, email: str, password: str = DEFAULT_PASSWORD
+) -> dict[str, str]:
+    response = await client.post("/api/auth/login", json={"email": email, "password": password})
+    assert response.status_code == 200, response.text
+    return {"Authorization": f"Bearer {response.json()['access_token']}"}
