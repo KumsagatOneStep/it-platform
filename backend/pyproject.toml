@@ -56,3 +56,12 @@ plugins = ["pydantic.mypy"]
 module = ["tests.*"]
 disallow_untyped_defs = false
 disallow_incomplete_defs = false
+
+[tool.importlinter]
+root_packages = ["app"]
+
+[[tool.importlinter.contracts]]
+name = "core не зависит от бизнес-модулей"
+type = "forbidden"
+source_modules = ["app.core"]
+forbidden_modules = ["app.modules"]

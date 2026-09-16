@@ -10,6 +10,7 @@ os.environ["COOKIE_SECURE"] = "false"
 from collections.abc import AsyncIterator
 
 import pytest
+from alembic import command
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 from redis.asyncio import Redis
@@ -20,6 +21,14 @@ from app.core.config import get_settings
 from app.core.db import get_session
 from app.core.redis import get_redis, resolve
 from app.main import create_app
+from tests.db_utils import alembic_config
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _migrated_database() -> None:
+    config = alembic_config()
+    command.downgrade(config, "base")
+    command.upgrade(config, "head")
 
 
 @pytest.fixture
