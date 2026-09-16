@@ -3,7 +3,7 @@ from datetime import date, datetime
 from enum import Enum
 from typing import Any
 
-from sqlalchemy import BigInteger, DateTime, Index, Integer, String, func
+from sqlalchemy import BigInteger, DateTime, ForeignKey, Index, String, func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, mapped_column
@@ -22,7 +22,7 @@ class AuditLog(Base):
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     entity_type: Mapped[str] = mapped_column(String(64))
     entity_id: Mapped[str] = mapped_column(String(64))
-    user_id: Mapped[int | None] = mapped_column(Integer)
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("common.users.id"))
     action: Mapped[str] = mapped_column(String(32))
     diff: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
