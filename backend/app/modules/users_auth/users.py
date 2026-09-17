@@ -17,6 +17,7 @@ from app.modules.users_auth.passwords import (
     hash_password_async,
     validate_password_strength,
 )
+from app.modules.users_auth.throttle import LoginThrottle
 
 
 def normalize_email(email: str) -> str:
@@ -309,3 +310,19 @@ async def issue_temporary_password(session: AsyncSession, *, actor_id: int, user
     )
     await session.commit()
     return temporary_password
+
+
+async def unlock_login(
+    session: AsyncSession, throttle: LoginThrottle, *, actor_id: int, user_id: int
+) -> None:
+    user = await get_user_or_404(session, user_id)
+    removed_keys = await throttle.unlock_account(user.email)
+    record_audit(
+        session,
+        entity_type="user",
+        entity_id=user.id,
+        user_id=actor_id,
+        action="unlock_login",
+        diff={"removed_keys": removed_keys},
+    )
+    await session.commit()

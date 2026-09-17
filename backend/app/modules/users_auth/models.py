@@ -31,7 +31,10 @@ class User(Base):
             values_callable=lambda enum: [member.value for member in enum],
         )
     )
-    department_id: Mapped[int | None] = mapped_column(ForeignKey("common.departments.id"))
+    # use_alter: цикл users ↔ departments (head_id); как в миграции 0003, FK добавляется ALTER
+    department_id: Mapped[int | None] = mapped_column(
+        ForeignKey("common.departments.id", use_alter=True)
+    )
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     must_change_password: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

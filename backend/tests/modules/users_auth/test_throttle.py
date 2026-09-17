@@ -51,12 +51,19 @@ async def test_bruteforce_alert_logged_once_without_locking(
     limits = ThrottleLimits(account_alert_attempts=3, account_ip_attempts=100, ip_attempts=100)
     throttle = LoginThrottle(redis_client, limits)
 
+    def alerts() -> list[logging.LogRecord]:
+        return [r for r in caplog.records if r.getMessage() == "auth.login_bruteforce_suspected"]
+
     with caplog.at_level(logging.WARNING, logger="app.modules.users_auth.throttle"):
-        for index in range(5):
+        for index in range(3):
+            await throttle.register_failure(EMAIL, f"10.0.1.{index}")
+        # ТЗ: сигнал при «более N» попытках, ровно N — ещё не сигнал
+        assert alerts() == []
+        for index in range(3, 6):
             await throttle.register_failure(EMAIL, f"10.0.1.{index}")
 
-    alerts = [r for r in caplog.records if r.getMessage() == "auth.login_bruteforce_suspected"]
-    assert len(alerts) == 1
+    assert len(alerts()) == 1
+    assert alerts()[0].__dict__["failed_attempts"] == 4
     assert not await throttle.is_locked(EMAIL, "10.0.2.1")
 
 
@@ -69,3 +76,46 @@ async def test_unlock_account_removes_locks_and_counters(redis_client: Redis) ->
 
     assert removed >= 1
     assert not await throttle.is_locked(EMAIL, "10.0.0.1")
+
+
+async def test_failure_counters_always_have_ttl(redis_client: Redis) -> None:
+    throttle = LoginThrottle(redis_client)
+
+    for _ in range(3):
+        await throttle.register_failure(EMAIL, "10.0.0.1")
+
+    for key in (
+        f"login:fail:acct_ip:{EMAIL}:10.0.0.1",
+        "login:fail:ip:10.0.0.1",
+        f"login:fail:acct:{EMAIL}",
+    ):
+        assert await resolve(redis_client.get(key)) == "3"
+        assert await resolve(redis_client.ttl(key)) > 0
+    assert 900 - 5 < await resolve(redis_client.ttl("login:fail:ip:10.0.0.1")) <= 900
+    assert 3600 - 5 < await resolve(redis_client.ttl(f"login:fail:acct:{EMAIL}")) <= 3600
+
+
+async def test_increment_does_not_extend_existing_ttl(redis_client: Redis) -> None:
+    throttle = LoginThrottle(redis_client)
+    await throttle.register_failure(EMAIL, "10.0.0.1")
+    await resolve(redis_client.expire("login:fail:ip:10.0.0.1", 100))
+
+    await throttle.register_failure(EMAIL, "10.0.0.1")
+
+    assert await resolve(redis_client.ttl("login:fail:ip:10.0.0.1")) <= 100
+
+
+async def test_counter_never_left_without_ttl_when_separate_expire_fails(
+    redis_client: Redis, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """INCR и EXPIRE выполняются атомарно: отдельный вызов EXPIRE не используется."""
+
+    async def failing_expire(*args: object, **kwargs: object) -> bool:
+        raise ConnectionError("соединение прервано между INCR и EXPIRE")
+
+    monkeypatch.setattr(redis_client, "expire", failing_expire)
+    throttle = LoginThrottle(redis_client)
+
+    await throttle.register_failure(EMAIL, "10.0.0.1")
+
+    assert await resolve(redis_client.ttl("login:fail:ip:10.0.0.1")) > 0

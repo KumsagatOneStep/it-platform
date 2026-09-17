@@ -27,9 +27,9 @@ async def resolve(value: Awaitable[T] | T) -> T:
     """Типы redis-py объявляют результат команд как `Awaitable[T] | T`; приводим к T.
 
     Объявлено через `@overload`, а не единственную сигнатуру с union-параметром:
-    при union-параметре mypy (strict, текущая версия) не может вывести T в
-    вызовах вида `resolve(redis.ping())`, где сам аргумент уже имеет тип
-    `Awaitable[bool]` — см. отчёт по задаче 2.
+    с redis-py 8.x методы клиента аннотированы как `Awaitable[T] | T`, и при
+    сигнатуре `resolve(value: Awaitable[T] | T) -> T` mypy (strict) выводит для
+    вызовов вида `resolve(redis.ping())` тип `Never` вместо `bool`.
     """
     if inspect.isawaitable(value):
         return await value

@@ -194,8 +194,7 @@ async def issue_temporary_password(
 async def unlock_login(
     user_id: int, session: SessionDep, redis: RedisDep, admin: AdminDep
 ) -> Response:
-    user = await users.get_user_or_404(session, user_id)
-    await LoginThrottle(redis).unlock_account(user.email)
+    await users.unlock_login(session, LoginThrottle(redis), actor_id=admin.id, user_id=user_id)
     return Response(status_code=204)
 
 

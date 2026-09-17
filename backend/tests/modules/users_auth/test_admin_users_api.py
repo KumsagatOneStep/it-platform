@@ -221,6 +221,7 @@ async def test_temporary_password_replaces_old_one(
 
 async def test_unlock_login(
     client: AsyncClient,
+    admin_user: User,
     admin_headers: dict[str, str],
     db_session: AsyncSession,
     redis_client: Redis,
@@ -234,6 +235,15 @@ async def test_unlock_login(
 
     assert response.status_code == 204
     assert not await throttle.is_locked(user.email, "203.0.113.5")
+    audit = await db_session.scalar(
+        select(AuditLog).where(
+            AuditLog.entity_type == "user",
+            AuditLog.entity_id == str(user.id),
+            AuditLog.action == "unlock_login",
+        )
+    )
+    assert audit is not None
+    assert audit.user_id == admin_user.id
 
 
 async def test_user_lookup_returns_only_active_matches(

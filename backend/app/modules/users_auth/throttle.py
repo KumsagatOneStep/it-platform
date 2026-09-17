@@ -50,7 +50,8 @@ class LoginThrottle:
         account_failures = await self._increment(
             f"login:fail:acct:{email}", limits.account_alert_window_seconds
         )
-        if account_failures >= limits.account_alert_attempts:
+        # ТЗ п. 2.4: «более 50 попыток за час» — сигнал на 51-й
+        if account_failures > limits.account_alert_attempts:
             first_alert = await resolve(
                 self._redis.set(
                     f"login:alerted:acct:{email}",
@@ -76,10 +77,12 @@ class LoginThrottle:
         return int(await resolve(self._redis.delete(*keys)))
 
     async def _increment(self, key: str, ttl_seconds: int) -> int:
-        count = int(await resolve(self._redis.incr(key)))
-        if count == 1:
-            await resolve(self._redis.expire(key, ttl_seconds))
-        return count
+        # MULTI/EXEC: счётчик не может остаться без TTL; NX — окно отсчитывается от первой ошибки
+        async with self._redis.pipeline(transaction=True) as pipe:
+            pipe.incr(key)
+            pipe.expire(key, ttl_seconds, nx=True)
+            count, _ = await pipe.execute()
+        return int(count)
 
     async def _lock(self, lock_key: str, counter_key: str) -> None:
         await resolve(self._redis.set(lock_key, "1", ex=self._limits.lock_seconds))
