@@ -9,6 +9,7 @@ import {
   RequireRole,
   useAuth,
 } from "../features/auth";
+import { DepartmentsPage } from "../features/departments";
 import { HomePage } from "../features/home";
 import { UsersPage } from "../features/users";
 import { BlankLayout } from "../layout/BlankLayout";
@@ -46,7 +47,10 @@ export const routes: RouteObject[] = [
           { path: "/profile", element: <ProfilePage /> },
           {
             element: <RequireRole role="admin" />,
-            children: [{ path: "/admin/users", element: <UsersPage /> }],
+            children: [
+              { path: "/admin/users", element: <UsersPage /> },
+              { path: "/admin/departments", element: <DepartmentsPage /> },
+            ],
           },
           { path: "*", element: <NotFoundPage /> },
         ],
