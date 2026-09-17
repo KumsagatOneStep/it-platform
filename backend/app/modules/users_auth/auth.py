@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.audit import record_audit
 from app.core.config import get_settings
-from app.core.errors import UnauthorizedError, ValidationFailedError
+from app.core.errors import TooManyRequestsError, UnauthorizedError, ValidationFailedError
 from app.modules.users_auth.models import RefreshToken, User
 from app.modules.users_auth.passwords import (
     dummy_verify_async,
@@ -15,12 +15,13 @@ from app.modules.users_auth.passwords import (
     validate_password_strength,
     verify_password_async,
 )
+from app.modules.users_auth.throttle import LoginThrottle
 from app.modules.users_auth.tokens import (
     create_access_token,
     hash_refresh_token,
     new_refresh_token,
 )
-from app.modules.users_auth.users import get_user_by_email
+from app.modules.users_auth.users import get_user_by_email, normalize_email
 
 logger = logging.getLogger(__name__)
 
@@ -67,10 +68,20 @@ async def issue_tokens(session: AsyncSession, user: User) -> TokenPair:
     )
 
 
-async def login(session: AsyncSession, *, email: str, password: str) -> TokenPair:
-    user = await authenticate(session, email, password)
+async def login(
+    session: AsyncSession, throttle: LoginThrottle, *, email: str, password: str, ip: str
+) -> TokenPair:
+    normalized = normalize_email(email)
+    if await throttle.is_locked(normalized, ip):
+        raise TooManyRequestsError(
+            "Слишком много неудачных попыток входа. Повторите через 15 минут",
+            code="login_locked",
+        )
+    user = await authenticate(session, normalized, password)
     if user is None:
+        await throttle.register_failure(normalized, ip)
         raise UnauthorizedError("Неверный email или пароль", code="invalid_credentials")
+    await throttle.register_success(normalized, ip)
     return await issue_tokens(session, user)
 
 

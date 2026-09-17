@@ -287,3 +287,32 @@ async def test_deactivated_user_access_token_stops_working(
     response = await client.get("/api/auth/me", headers=headers)
 
     assert response.status_code == 401
+
+
+async def test_login_locked_for_pair_after_5_failures_but_not_from_other_ip(
+    client: AsyncClient, db_session: AsyncSession
+) -> None:
+    user = await make_user(db_session)
+    attacker = {"X-Forwarded-For": "203.0.113.5"}
+    for _ in range(5):
+        failed = await client.post(
+            "/api/auth/login",
+            json={"email": user.email, "password": "wrong-password"},
+            headers=attacker,
+        )
+        assert failed.status_code == 401
+
+    locked = await client.post(
+        "/api/auth/login",
+        json={"email": user.email, "password": DEFAULT_PASSWORD},
+        headers=attacker,
+    )
+    from_office = await client.post(
+        "/api/auth/login",
+        json={"email": user.email, "password": DEFAULT_PASSWORD},
+        headers={"X-Forwarded-For": "203.0.113.6"},
+    )
+
+    assert locked.status_code == 429
+    assert locked.json()["error"]["code"] == "login_locked"
+    assert from_office.status_code == 200

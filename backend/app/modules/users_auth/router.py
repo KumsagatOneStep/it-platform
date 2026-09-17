@@ -1,9 +1,11 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Cookie, Response
+from fastapi import APIRouter, Cookie, Request, Response
 
 from app.core.config import get_settings
 from app.core.db import SessionDep
+from app.core.net import client_ip
+from app.core.redis import RedisDep
 from app.modules.users_auth import auth
 from app.modules.users_auth.deps import PasswordChangeUserDep
 from app.modules.users_auth.schemas import (
@@ -12,6 +14,7 @@ from app.modules.users_auth.schemas import (
     LoginRequest,
     MeRead,
 )
+from app.modules.users_auth.throttle import LoginThrottle
 
 REFRESH_COOKIE_NAME = "refresh_token"
 REFRESH_COOKIE_PATH = "/api/auth"
@@ -38,8 +41,20 @@ def _token_response(response: Response, pair: auth.TokenPair) -> AccessTokenResp
 
 
 @auth_router.post("/login", response_model=AccessTokenResponse)
-async def login(body: LoginRequest, response: Response, session: SessionDep) -> AccessTokenResponse:
-    pair = await auth.login(session, email=body.email, password=body.password)
+async def login(
+    body: LoginRequest,
+    request: Request,
+    response: Response,
+    session: SessionDep,
+    redis: RedisDep,
+) -> AccessTokenResponse:
+    pair = await auth.login(
+        session,
+        LoginThrottle(redis),
+        email=body.email,
+        password=body.password,
+        ip=client_ip(request, get_settings().trusted_proxies),
+    )
     return _token_response(response, pair)
 
 
