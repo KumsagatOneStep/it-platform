@@ -12,15 +12,15 @@
 
 ## 2. Стек
 
-- Vite, React 19, TypeScript (`strict: true`).
-- MUI 9 (`@mui/material`, emotion), иконки `@tabler/icons-react`, шрифт Plus Jakarta Sans через `@fontsource/plus-jakarta-sans`.
+- Vite, React 19, TypeScript 5.9 (`strict: true`; openapi-typescript и typescript-eslint не поддерживают 6+).
+- MUI 9 (`@mui/material`, emotion), иконки `@tabler/icons-react`, шрифт Manrope через `@fontsource/manrope` (в Plus Jakarta Sans из шаблона нет кириллицы).
 - `react-router` 7.
 - `@tanstack/react-query` 5 — загрузка, кэш, инвалидация.
 - `openapi-typescript` (генерация типов) + `openapi-fetch` (типизированный клиент).
 - `react-hook-form` — формы.
 - `notistack` — всплывающие уведомления.
 - Vitest, `@testing-library/react`, `@testing-library/user-event`, MSW — тесты.
-- ESLint (typescript-eslint, react-hooks, `eslint-plugin-import`), Prettier.
+- ESLint 9 (typescript-eslint, react-hooks, `eslint-plugin-import`; плагин не поддерживает ESLint 10), Prettier.
 - Менеджер пакетов npm, Node 24 (`.nvmrc`).
 
 ## 3. Структура
@@ -33,8 +33,9 @@ theme/          тема Modernize на TS (palette, typography, shadows, compon
 layout/         FullLayout (сайдбар + шапка), BlankLayout, конфиг меню, страницы 404 и «Нет доступа»
 api/            schema.d.ts (сгенерирован), client.ts (openapi-fetch + middleware), errors.ts (ApiError)
 shared/ui/      DataTable, FilterBar, поля форм, FormDialog, EntityAutocomplete, ConfirmDialog,
-                BlockersDialog, PageContainer, DashboardCard
-shared/lib/     useUrlFilters, форматирование дат/чисел (ru-RU), applyApiErrors
+                BlockersDialog, PageContainer, DashboardCard, StatusPage, FullScreenLoader
+shared/lib/     useUrlFilters, форматирование дат/чисел (ru-RU), applyApiErrors, useDocumentTitle
+shared/lookups/ общие запросы для нескольких фич: список отделов, имена пользователей, варианты ответственных
 features/
   auth/         AuthProvider, useAuth, вход, смена пароля, профиль, RequireAuth, RequireRole
   home/         заглушка главной
@@ -46,7 +47,8 @@ features/
 Каждая фича экспортирует публичное API через `features/<name>/index.ts`. Правило границ (ESLint `import/no-restricted-paths`, ошибка ломает CI):
 - фича импортирует другую фичу только через её `index.ts`;
 - `shared/`, `api/`, `theme/` не импортируют `features/`, `layout/`, `app/`;
-- `layout/` не импортирует `features/`, кроме `features/auth` через `index.ts`.
+- `layout/` не импортирует `features/`, кроме `features/auth` через `index.ts`;
+- фичи не импортируют `layout/` и `app/` (поэтому страница «Нет доступа» — `shared/ui/StatusPage`).
 
 ## 4. Каркас
 
@@ -107,11 +109,11 @@ features/
 - QueryClient: `retry` только для сетевых ошибок и 5xx (до 2 раз), без retry для 4xx; `refetchOnWindowFocus: false`; `staleTime` 30 с.
 
 Отображение:
-- **422** — `applyApiErrors(form, error)`: элементы `details` с путём поля (`loc`) раскладываются в `setError` соответствующих полей; остальное — сообщение над формой (`Alert`). Коды backend с известным полем (`department_name_taken` → `name`, `email_taken` → `email`, `head_not_found`/`head_invalid_role` → `head_id`, `invalid_default_assignee` → `default_assignee_id`, `*_blank` → соответствующее поле) сопоставляются через словарь в фиче.
+- **422** — `applyApiErrors(error, setError, options)`: элементы `details` с путём поля (`loc`) ставят на поле «Некорректное значение» (`msg` pydantic — на английском); остальное — сообщение над формой (`Alert`). Коды backend с известным полем (`department_name_taken` → `name`, `email_taken` → `email`, `head_not_found`/`head_invalid_role` → `head_id`, `invalid_default_assignee` → `default_assignee_id`, `*_blank` → соответствующее поле) сопоставляются через словарь в фиче.
 - **409** — сообщение `message` над формой; `deactivation_blocked` и `role_change_blocked` — `BlockersDialog` со списком из `details`.
 - **429 `login_locked`** — на форме входа сообщение backend.
 - **401 на `/auth/login`** — «Неверный email или пароль» (текст backend).
-- **Сеть / 5xx** — snackbar с сообщением; `requestId` из заголовка `X-Request-ID` пишется в `console.error`.
+- **Сеть / 5xx** — сообщение там, где выполнялось действие (ошибка с «Повторить» в таблице, `Alert` в форме, snackbar для действий в меню строки); `requestId` из заголовка `X-Request-ID` пишется в `console.error` для всех запросов и мутаций (кэши TanStack Query).
 - Тексты ошибок берутся из `message` backend; собственные тексты фронтенда — только для `network_error`/`unknown_error` и клиентской валидации.
 
 ## 8. Общие компоненты (`shared/ui`)
@@ -121,7 +123,7 @@ features/
 - **`FilterBar`** — поиск (debounce 300 мс), селекты, переключатели; связан с `useUrlFilters`.
 - **Поля форм** — `FormTextField`, `FormSelect`, `FormSwitch`, `FormAutocomplete` поверх `Controller` react-hook-form, показывают ошибку поля.
 - **`FormDialog`** — модальная форма: заголовок, тело, «Отмена»/«Сохранить», блокировка на время отправки, `Alert` с общей ошибкой, закрытие по Esc запрещено во время отправки.
-- **`EntityAutocomplete<T>`** — асинхронный выбор: `fetchOptions(q)`, debounce 300 мс, минимум 0 символов (первые результаты при открытии), `getOptionLabel`, начальное значение по id с подписью. Первое применение — выбор пользователя через `GET /api/users?q=&limit=20`.
+- **`EntityAutocomplete`** — асинхронный выбор: `fetchOptions(q)`, debounce 300 мс, минимум 0 символов (первые результаты при открытии), варианты `{ id, label }`, подпись текущего значения через `labelFor(id)`. Первое применение — выбор ответственного (руководитель отдела, исполнитель по умолчанию) через `GET /api/admin/users?q=&is_active=true` с отбором Manager/Admin на клиенте: `GET /api/users` требует непустой `q` и не фильтрует по роли.
 - **`ConfirmDialog`**, **`BlockersDialog`** (заголовок + список `details`), **`PageContainer`** (заголовок, хлебные крошки, слот действий), **`DashboardCard`** (карточка Modernize).
 - Уведомления — `notistack` (`enqueueSnackbar`), успех операций — «Сохранено», «Пользователь деактивирован» и т. п.
 
@@ -175,14 +177,14 @@ Vitest + Testing Library + MSW (`msw/node` в тестах). Обработчи�
 
 ## 13. Production-образ и compose
 
-- `frontend/Dockerfile`: этап `node:24-alpine` (`npm ci`, `npm run build`) → `nginx:alpine` со статикой из `dist/` и `nginx.conf`.
+- `frontend/Dockerfile`: этап `node:24-alpine` (`npm ci`, `npm run build`) → `nginx:1.29-alpine` со статикой из `dist/` и `nginx.conf`. Имя `backend` разрешается при запросе (`resolver 127.0.0.11` и переменная в `proxy_pass`), чтобы nginx стартовал без backend.
 - `frontend/nginx.conf`:
-  - `location /api/` → `proxy_pass http://backend:8000;` с `proxy_set_header Host $host`, `X-Forwarded-For $remote_addr` (перезапись, не добавление), `X-Forwarded-Proto $scheme`; `/health` и `/ready` наружу не проксируются;
+  - `location /api/` → проксирование на `http://backend:8000` с `proxy_set_header Host $host`, `X-Forwarded-For $remote_addr` (перезапись, не добавление), `X-Forwarded-Proto $scheme`; `/health` и `/ready` наружу не проксируются;
   - SPA-fallback: `try_files $uri /index.html;`;
   - `/assets/` — `Cache-Control: public, max-age=31536000, immutable`; `index.html` — `no-cache`;
   - заголовки: `X-Content-Type-Options: nosniff`, `Referrer-Policy: same-origin`, `X-Frame-Options: DENY`, `Content-Security-Policy: default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'`.
 - `frontend/.dockerignore`: `node_modules`, `dist`, `coverage`.
-- `compose.yaml`: сервис `frontend` (build `./frontend`, порт `8080:80`, `depends_on: backend`). Сервису `backend` задаётся `TRUSTED_PROXIES` с подсетью Docker-сети compose (подсеть фиксируется в `networks`), чтобы IP клиента брался из `X-Forwarded-For` nginx.
+- `compose.yaml`: сервис `frontend` (build `./frontend`, порт `127.0.0.1:8080:80`, `depends_on: backend`). Подсеть сети compose фиксируется (`172.28.0.0/16`), сервису `backend` задаётся `TRUSTED_PROXIES='["172.28.0.0/16"]'`, чтобы IP клиента брался из `X-Forwarded-For` nginx.
 - HTTPS, домен и staging-развёртывание — вне этого плана.
 
 ## 14. Ветка и порядок работ
