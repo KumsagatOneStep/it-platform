@@ -1,4 +1,4 @@
-.PHONY: up down test lint format openapi migrate create-admin
+.PHONY: up down test lint format openapi migrate create-admin frontend-install frontend-dev frontend-check gen-api
 
 up:
 	docker compose up -d postgres redis
@@ -23,3 +23,15 @@ migrate:
 
 create-admin:
 	cd backend && uv run python -m app.cli create-admin --email "$(EMAIL)" --full-name "$(NAME)"
+
+frontend-install:
+	cd frontend && npm ci
+
+frontend-dev:
+	cd frontend && npm run dev
+
+frontend-check:
+	cd frontend && npm run check && npm run build
+
+gen-api: openapi
+	cd frontend && npm run gen:api

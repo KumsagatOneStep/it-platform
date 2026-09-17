@@ -33,6 +33,7 @@ services:
       DATABASE_URL: postgresql+asyncpg://app:app@postgres:5432/it_platform
       REDIS_URL: redis://redis:6379/0
       COOKIE_SECURE: "false"
+      TRUSTED_PROXIES: '["172.28.0.0/16"]'
     command: >
       sh -c "alembic upgrade head &&
              uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload --no-proxy-headers"
@@ -46,6 +47,19 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "127.0.0.1:8080:80"
+    depends_on:
+      - backend
+
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
 
 volumes:
   pgdata:

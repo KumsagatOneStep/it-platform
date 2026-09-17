@@ -6,6 +6,7 @@
 
 - Docker (OrbStack или Docker Desktop)
 - [uv](https://docs.astral.sh/uv/)
+- Node.js 24 (`.nvmrc` в `frontend/`)
 
 ## Запуск локально
 
@@ -47,9 +48,24 @@ IP клиента нужен для защиты от перебора паро�
 
 Если прокси не указан в `TRUSTED_PROXIES`, все запросы выглядят как пришедшие с IP прокси: 20 неудачных входов любых пользователей за 15 минут заблокируют вход всем.
 
+## Фронтенд
+
+React + TypeScript (Vite), MUI в стиле шаблона Modernize. Код — `frontend/`.
+
+```bash
+make frontend-install
+make frontend-dev      # http://localhost:5173, /api проксируется на localhost:8000
+make frontend-check    # типы, ESLint, Prettier, тесты, актуальность типов API, сборка
+make gen-api           # после изменения API: openapi.json + src/api/schema.d.ts
+```
+
+Весь стек в Docker: `docker compose up -d --build` → http://localhost:8080 (nginx отдаёт фронтенд и проксирует `/api`).
+
+Структура `frontend/src`: `app/` (провайдеры, маршруты), `layout/` (каркас), `api/` (клиент и сгенерированные типы), `shared/ui`, `shared/lib`, `shared/lookups` (общие справочные запросы), `features/<модуль>/`. Фича импортирует другую фичу только через её `index.ts`; `api`, `theme` и `shared` не зависят от фич — это проверяет ESLint (`import/no-restricted-paths`).
+
 ## Фронтенд: обновление токена
 
-Refresh-токен ротируется при каждом `POST /api/auth/refresh`. Фронтенд должен выполнять refresh в режиме single-flight: один запрос на вкладку (и координация между вкладками, например через `BroadcastChannel` или Web Locks), остальные ждут его результата. Повтор уже использованного токена в течение 30 секунд возвращает 401 без побочных эффектов; более поздний повтор считается кражей и отзывает все сессии пользователя.
+Refresh-токен ротируется при каждом `POST /api/auth/refresh`. Фронтенд должен выполнять refresh в режиме single-flight: один запрос на вкладку (и координация между вкладками, например через `BroadcastChannel` или Web Locks), остальные ждут его результата. Повтор уже использованного токена в течение 30 секунд возвращает 401 без побочных эффектов; более поздний повтор считается кражей и отзывает все сессии пользователя. Реализация — `frontend/src/api/refresh.ts` (общий промис внутри вкладки и Web Locks между вкладками).
 
 ## Архитектура
 
