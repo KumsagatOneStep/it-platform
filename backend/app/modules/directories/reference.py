@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.audit import diff_values, record_audit
 from app.core.db import constraint_name
 from app.core.errors import ConflictError, NotFoundError, ValidationFailedError
-from app.modules.directories.text import normalize_text_field
+from app.core.text import normalize_text_field
 
 Validator = Callable[[AsyncSession, dict[str, Any]], Awaitable[None]]
 

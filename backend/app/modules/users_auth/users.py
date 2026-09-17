@@ -9,7 +9,8 @@ from app.core.audit import diff_values, record_audit
 from app.core.db import constraint_name
 from app.core.errors import ConflictError, NotFoundError, ValidationFailedError
 from app.core.events import event_bus
-from app.modules.users_auth.events import UserDeactivationRequested
+from app.core.text import normalize_text_field
+from app.modules.users_auth.events import UserDeactivationRequested, UserRoleChangeRequested
 from app.modules.users_auth.models import User, UserRole
 from app.modules.users_auth.passwords import (
     generate_temporary_password,
@@ -20,6 +21,12 @@ from app.modules.users_auth.passwords import (
 
 def normalize_email(email: str) -> str:
     return email.strip().lower()
+
+
+def normalize_full_name(full_name: str) -> str:
+    return normalize_text_field(
+        full_name, code="full_name_blank", message="ФИО не может быть пустым"
+    )
 
 
 def raise_user_integrity_error(exc: IntegrityError) -> NoReturn:
@@ -50,9 +57,10 @@ async def create_user(
     password: str,
     must_change_password: bool,
 ) -> User:
+    normalized_full_name = normalize_full_name(full_name)
     user = User(
         email=normalize_email(email),
-        full_name=full_name.strip(),
+        full_name=normalized_full_name,
         password_hash=await hash_password_async(password),
         role=role,
         department_id=department_id,
@@ -150,6 +158,19 @@ async def _ensure_not_last_admin(session: AsyncSession, user_id: int) -> None:
         )
 
 
+async def _check_role_change(session: AsyncSession, user: User, new_role: UserRole) -> None:
+    if user.role == UserRole.ADMIN and user.is_active:
+        await _ensure_not_last_admin(session, user.id)
+    event = UserRoleChangeRequested(user_id=user.id, old_role=user.role, new_role=new_role)
+    await event_bus.publish(session, event)
+    if event.blockers:
+        raise ConflictError(
+            "Перед сменой роли нужно передать ответственность другим сотрудникам",
+            code="role_change_blocked",
+            details=[asdict(blocker) for blocker in event.blockers],
+        )
+
+
 async def admin_create_user(
     session: AsyncSession,
     *,
@@ -193,13 +214,10 @@ async def update_user(
     session: AsyncSession, *, actor_id: int, user_id: int, updates: dict[str, Any]
 ) -> User:
     user = await get_user_or_404(session, user_id)
-    if (
-        "role" in updates
-        and user.role == UserRole.ADMIN
-        and updates["role"] != UserRole.ADMIN
-        and user.is_active
-    ):
-        await _ensure_not_last_admin(session, user.id)
+    if "full_name" in updates:
+        updates = {**updates, "full_name": normalize_full_name(updates["full_name"])}
+    if "role" in updates and updates["role"] != user.role:
+        await _check_role_change(session, user, updates["role"])
     before = {key: getattr(user, key) for key in updates}
     try:
         async with session.begin_nested():

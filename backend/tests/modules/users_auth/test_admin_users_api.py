@@ -5,7 +5,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.audit import AuditLog
 from app.core.events import event_bus
-from app.modules.users_auth.events import DeactivationBlocker, UserDeactivationRequested
+from app.modules.users_auth.events import (
+    Blocker,
+    UserDeactivationRequested,
+    UserRoleChangeRequested,
+)
 from app.modules.users_auth.models import User, UserRole
 from app.modules.users_auth.throttle import LoginThrottle
 from tests.factories import DEFAULT_PASSWORD, login, make_user
@@ -166,7 +170,7 @@ async def test_deactivation_blocked_by_subscriber(
     user = await make_user(db_session)
 
     async def blocker(session: AsyncSession, event: UserDeactivationRequested) -> None:
-        event.blockers.append(DeactivationBlocker(kind="test", entity_id=1, title="Тестовый блок"))
+        event.blockers.append(Blocker(kind="test", entity_id=1, title="Тестовый блок"))
 
     event_bus.subscribe(UserDeactivationRequested)(blocker)
     try:
@@ -245,3 +249,71 @@ async def test_user_lookup_returns_only_active_matches(
 
     assert response.status_code == 200
     assert [u["full_name"] for u in response.json()] == ["Смирнов Алексей"]
+
+
+async def test_whitespace_full_name_rejected_on_create_and_update(
+    client: AsyncClient, admin_headers: dict[str, str], db_session: AsyncSession
+) -> None:
+    user = await make_user(db_session, full_name="Старое Имя")
+
+    created = await client.post(
+        "/api/admin/users",
+        headers=admin_headers,
+        json={"email": "blank@company.ru", "full_name": "   ", "role": "employee"},
+    )
+    updated = await client.patch(
+        f"/api/admin/users/{user.id}", headers=admin_headers, json={"full_name": "   "}
+    )
+
+    assert created.status_code == 422
+    assert created.json()["error"]["code"] == "full_name_blank"
+    assert created.json()["error"]["message"] == "ФИО не может быть пустым"
+    assert updated.status_code == 422
+    assert updated.json()["error"]["code"] == "full_name_blank"
+    assert user.full_name == "Старое Имя"
+
+
+async def test_update_strips_full_name(
+    client: AsyncClient, admin_headers: dict[str, str], db_session: AsyncSession
+) -> None:
+    user = await make_user(db_session)
+
+    response = await client.patch(
+        f"/api/admin/users/{user.id}", headers=admin_headers, json={"full_name": "  Новое Имя "}
+    )
+
+    assert response.status_code == 200
+    assert response.json()["full_name"] == "Новое Имя"
+
+
+async def test_role_change_publishes_event_and_respects_blockers(
+    client: AsyncClient, admin_headers: dict[str, str], db_session: AsyncSession
+) -> None:
+    user = await make_user(db_session, role=UserRole.MANAGER)
+    events: list[UserRoleChangeRequested] = []
+
+    async def blocker(session: AsyncSession, event: UserRoleChangeRequested) -> None:
+        events.append(event)
+        event.blockers.append(Blocker(kind="test", entity_id=1, title="Тестовый блок"))
+
+    event_bus.subscribe(UserRoleChangeRequested)(blocker)
+    try:
+        same_role = await client.patch(
+            f"/api/admin/users/{user.id}", headers=admin_headers, json={"role": "manager"}
+        )
+        blocked = await client.patch(
+            f"/api/admin/users/{user.id}", headers=admin_headers, json={"role": "employee"}
+        )
+    finally:
+        event_bus.unsubscribe(UserRoleChangeRequested, blocker)
+
+    assert same_role.status_code == 200
+    assert blocked.status_code == 409
+    assert blocked.json()["error"]["code"] == "role_change_blocked"
+    assert blocked.json()["error"]["details"] == [
+        {"kind": "test", "entity_id": 1, "title": "Тестовый блок"}
+    ]
+    assert [(e.user_id, e.old_role, e.new_role) for e in events] == [
+        (user.id, UserRole.MANAGER, UserRole.EMPLOYEE)
+    ]
+    assert user.role is UserRole.MANAGER

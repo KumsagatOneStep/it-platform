@@ -205,3 +205,29 @@ async def test_update_with_trailing_space_duplicate_name_returns_409(
 
     assert response.status_code == 409, response.text
     assert response.json()["error"]["code"] == "already_exists"
+
+
+async def test_ticket_type_default_assignee_role_cannot_be_downgraded(
+    client: AsyncClient, admin_headers: dict[str, str], db_session: AsyncSession
+) -> None:
+    manager = await make_user(db_session, role=UserRole.MANAGER)
+    ticket_type = await client.post(
+        "/api/admin/directories/ticket-types",
+        headers=admin_headers,
+        json={"code": "access", "name": "Доступы", "default_assignee_id": manager.id},
+    )
+    assert ticket_type.status_code == 201, ticket_type.text
+
+    response = await client.patch(
+        f"/api/admin/users/{manager.id}", headers=admin_headers, json={"role": "employee"}
+    )
+
+    assert response.status_code == 409
+    assert response.json()["error"]["code"] == "role_change_blocked"
+    assert response.json()["error"]["details"] == [
+        {
+            "kind": "ticket_type_default_assignee",
+            "entity_id": ticket_type.json()["id"],
+            "title": "Исполнитель по умолчанию для типа заявок «Доступы»",
+        }
+    ]

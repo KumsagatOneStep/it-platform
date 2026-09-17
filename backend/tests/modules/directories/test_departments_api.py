@@ -187,3 +187,39 @@ async def test_user_with_unknown_department_rejected(
 
     assert response.status_code == 422
     assert response.json()["error"]["code"] == "department_not_found"
+
+
+async def test_department_head_role_cannot_be_downgraded(
+    client: AsyncClient, admin_headers: dict[str, str], db_session: AsyncSession
+) -> None:
+    head = await make_user(db_session, role=UserRole.MANAGER)
+    department = await _create_department(client, admin_headers, "Снабжение", head.id)
+
+    response = await client.patch(
+        f"/api/admin/users/{head.id}", headers=admin_headers, json={"role": "employee"}
+    )
+
+    assert response.status_code == 409
+    assert response.json()["error"]["code"] == "role_change_blocked"
+    assert response.json()["error"]["details"] == [
+        {
+            "kind": "department_head",
+            "entity_id": department["id"],
+            "title": "Руководитель отдела «Снабжение»",
+        }
+    ]
+    assert head.role is UserRole.MANAGER
+
+
+async def test_department_head_can_be_promoted_to_admin(
+    client: AsyncClient, admin_headers: dict[str, str], db_session: AsyncSession
+) -> None:
+    head = await make_user(db_session, role=UserRole.MANAGER)
+    await _create_department(client, admin_headers, "Финансы", head.id)
+
+    response = await client.patch(
+        f"/api/admin/users/{head.id}", headers=admin_headers, json={"role": "admin"}
+    )
+
+    assert response.status_code == 200
+    assert response.json()["role"] == "admin"

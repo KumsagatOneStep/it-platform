@@ -8,9 +8,9 @@ from app.core.audit import diff_values, record_audit
 from app.core.db import constraint_name
 from app.core.errors import ConflictError, NotFoundError, ValidationFailedError
 from app.core.events import event_bus
+from app.core.text import normalize_text_field
 from app.modules.directories.events import DepartmentHeadChanged
 from app.modules.directories.models import Department
-from app.modules.directories.text import normalize_text_field
 from app.modules.users_auth.service import UserRole, get_user_info
 
 _HEAD_ROLES = frozenset({UserRole.MANAGER, UserRole.ADMIN})
