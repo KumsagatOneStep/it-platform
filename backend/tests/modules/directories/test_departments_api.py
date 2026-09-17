@@ -80,6 +80,42 @@ async def test_head_must_be_active_manager_or_admin(
     assert missing.json()["error"]["code"] == "head_not_found"
 
 
+async def test_update_with_trailing_space_duplicate_name_returns_409(
+    client: AsyncClient, admin_headers: dict[str, str]
+) -> None:
+    await _create_department(client, admin_headers, "Финансы")
+    other = await _create_department(client, admin_headers, "Кадры")
+
+    response = await client.patch(
+        f"/api/admin/departments/{other['id']}",
+        headers=admin_headers,
+        json={"name": "Финансы "},
+    )
+
+    assert response.status_code == 409
+    assert response.json()["error"]["code"] == "department_name_taken"
+
+
+async def test_whitespace_only_name_rejected_on_create_and_update(
+    client: AsyncClient, admin_headers: dict[str, str]
+) -> None:
+    department = await _create_department(client, admin_headers, "Реклама")
+
+    create_response = await client.post(
+        "/api/admin/departments", headers=admin_headers, json={"name": "   "}
+    )
+    update_response = await client.patch(
+        f"/api/admin/departments/{department['id']}",
+        headers=admin_headers,
+        json={"name": "   "},
+    )
+
+    assert create_response.status_code == 422
+    assert create_response.json()["error"]["code"] == "department_name_blank"
+    assert update_response.status_code == 422
+    assert update_response.json()["error"]["code"] == "department_name_blank"
+
+
 async def test_head_change_publishes_event(
     client: AsyncClient, admin_headers: dict[str, str], db_session: AsyncSession
 ) -> None:

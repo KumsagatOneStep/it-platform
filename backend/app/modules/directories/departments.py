@@ -23,6 +23,16 @@ def _raise_integrity_error(exc: IntegrityError) -> NoReturn:
     raise exc
 
 
+def _normalize_name(name: str) -> str:
+    """Убирает пробелы по краям; одинаково для create и update (см. review round 1)."""
+    normalized = name.strip()
+    if not normalized:
+        raise ValidationFailedError(
+            "Название отдела не может быть пустым", code="department_name_blank"
+        )
+    return normalized
+
+
 async def _validate_head(session: AsyncSession, user_id: int) -> None:
     info = await get_user_info(session, user_id)
     if info is None or not info.is_active:
@@ -42,9 +52,10 @@ async def list_departments(session: AsyncSession) -> list[Department]:
 async def create_department(
     session: AsyncSession, *, actor_id: int, name: str, head_id: int | None
 ) -> Department:
+    normalized_name = _normalize_name(name)
     if head_id is not None:
         await _validate_head(session, head_id)
-    department = Department(name=name.strip(), head_id=head_id)
+    department = Department(name=normalized_name, head_id=head_id)
     try:
         async with session.begin_nested():
             session.add(department)
@@ -68,6 +79,8 @@ async def update_department(
     department = await session.get(Department, department_id)
     if department is None:
         raise NotFoundError("Отдел не найден", code="department_not_found")
+    if "name" in updates:
+        updates = {**updates, "name": _normalize_name(updates["name"])}
     if updates.get("head_id") is not None:
         await _validate_head(session, updates["head_id"])
     before = {key: getattr(department, key) for key in updates}
