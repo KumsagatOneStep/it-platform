@@ -1,5 +1,6 @@
 import "@testing-library/jest-dom/vitest";
 
+import { resetSession } from "../api/session";
 import { server } from "./server";
 
 // jsdom не реализует matchMedia: эмулируем окно шириной 1280px (десктоп, брейкпоинт lg),
@@ -31,5 +32,8 @@ Object.defineProperty(window, "matchMedia", {
 });
 
 beforeAll(() => server.listen({ onUnhandledRequest: "error" }));
-afterEach(() => server.resetHandlers());
+afterEach(() => {
+  server.resetHandlers();
+  resetSession();
+});
 afterAll(() => server.close());
