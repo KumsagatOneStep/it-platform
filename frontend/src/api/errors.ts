@@ -1,3 +1,5 @@
+import type { Schemas } from "./types";
+
 export const NETWORK_ERROR_MESSAGE = "Нет связи с сервером";
 export const UNKNOWN_ERROR_MESSAGE = "Не удалось выполнить запрос";
 
@@ -37,9 +39,7 @@ export class ApiError extends Error {
   }
 }
 
-interface ErrorEnvelope {
-  error: { code: string; message: string; details?: unknown };
-}
+type ErrorEnvelope = Schemas["ErrorResponse"];
 
 function isErrorEnvelope(body: unknown): body is ErrorEnvelope {
   if (typeof body !== "object" || body === null || !("error" in body)) return false;
