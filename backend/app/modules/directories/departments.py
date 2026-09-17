@@ -10,6 +10,7 @@ from app.core.errors import ConflictError, NotFoundError, ValidationFailedError
 from app.core.events import event_bus
 from app.modules.directories.events import DepartmentHeadChanged
 from app.modules.directories.models import Department
+from app.modules.directories.text import normalize_text_field
 from app.modules.users_auth.service import UserRole, get_user_info
 
 _HEAD_ROLES = frozenset({UserRole.MANAGER, UserRole.ADMIN})
@@ -25,12 +26,9 @@ def _raise_integrity_error(exc: IntegrityError) -> NoReturn:
 
 def _normalize_name(name: str) -> str:
     """Убирает пробелы по краям; одинаково для create и update (см. review round 1)."""
-    normalized = name.strip()
-    if not normalized:
-        raise ValidationFailedError(
-            "Название отдела не может быть пустым", code="department_name_blank"
-        )
-    return normalized
+    return normalize_text_field(
+        name, code="department_name_blank", message="Название отдела не может быть пустым"
+    )
 
 
 async def _validate_head(session: AsyncSession, user_id: int) -> None:

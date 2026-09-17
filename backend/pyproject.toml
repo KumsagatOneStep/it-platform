@@ -57,6 +57,10 @@ module = ["tests.*"]
 disallow_untyped_defs = false
 disallow_incomplete_defs = false
 
+[[tool.mypy.overrides]]
+module = ["app.modules.directories.reference_router"]
+warn_unused_ignores = false
+
 [tool.importlinter]
 root_packages = ["app"]
 
@@ -99,5 +103,8 @@ forbidden_modules = [
     "app.modules.directories.departments",
     "app.modules.directories.handlers",
     "app.modules.directories.router",
+    "app.modules.directories.reference",
+    "app.modules.directories.references",
+    "app.modules.directories.reference_router",
 ]
 allow_indirect_imports = true

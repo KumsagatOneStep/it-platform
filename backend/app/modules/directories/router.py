@@ -2,6 +2,8 @@ from fastapi import APIRouter
 
 from app.core.db import SessionDep
 from app.modules.directories import departments
+from app.modules.directories.reference_router import build_reference_routers
+from app.modules.directories.references import REFERENCE_SPECS
 from app.modules.directories.schemas import DepartmentCreate, DepartmentRead, DepartmentUpdate
 from app.modules.users_auth.service import AdminDep, CurrentUserDep
 
@@ -39,3 +41,5 @@ async def update_department(
 
 
 routers = [departments_router, admin_departments_router]
+for _spec in REFERENCE_SPECS:
+    routers.extend(build_reference_routers(_spec))
