@@ -4,6 +4,7 @@ import getpass as getpass
 import sys
 from collections.abc import Sequence
 
+import app.model_registry  # noqa: F401  все модели: иначе FK users→departments не разрешится
 from app.core.db import SessionFactory
 from app.core.errors import AppError
 from app.modules.users_auth.service import create_first_admin
