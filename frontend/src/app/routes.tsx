@@ -1,4 +1,4 @@
-import type { RouteObject } from "react-router";
+import { Navigate, type RouteObject } from "react-router";
 
 import {
   ChangePasswordPage,
@@ -10,6 +10,7 @@ import {
   useAuth,
 } from "../features/auth";
 import { DepartmentsPage } from "../features/departments";
+import { DirectoriesPage } from "../features/directories";
 import { HomePage } from "../features/home";
 import { UsersPage } from "../features/users";
 import { BlankLayout } from "../layout/BlankLayout";
@@ -50,6 +51,11 @@ export const routes: RouteObject[] = [
             children: [
               { path: "/admin/users", element: <UsersPage /> },
               { path: "/admin/departments", element: <DepartmentsPage /> },
+              {
+                path: "/admin/directories",
+                element: <Navigate to="/admin/directories/locations" replace />,
+              },
+              { path: "/admin/directories/:kind", element: <DirectoriesPage /> },
             ],
           },
           { path: "*", element: <NotFoundPage /> },
