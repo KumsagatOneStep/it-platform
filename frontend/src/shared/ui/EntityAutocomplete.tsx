@@ -2,6 +2,7 @@ import { Autocomplete, CircularProgress, TextField } from "@mui/material";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 
+import { ApiError, UNKNOWN_ERROR_MESSAGE } from "../../api/errors";
 import { useDebouncedValue } from "../lib/useDebouncedValue";
 
 export interface EntityOption {
@@ -67,7 +68,13 @@ export function EntityAutocomplete({
         if (reason === "clear" || reason === "reset") setInput("");
       }}
       disabled={disabled}
-      noOptionsText="Ничего не найдено"
+      noOptionsText={
+        options.error
+          ? options.error instanceof ApiError
+            ? options.error.message
+            : UNKNOWN_ERROR_MESSAGE
+          : "Ничего не найдено"
+      }
       loadingText="Загрузка…"
       renderInput={(params) => (
         <TextField

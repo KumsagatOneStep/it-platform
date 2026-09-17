@@ -1,6 +1,7 @@
 import { screen, waitFor } from "@testing-library/react";
 import { useState } from "react";
 
+import { ApiError } from "../../api/errors";
 import { renderWithProviders } from "../../test/render";
 import { EntityAutocomplete, type EntityOption } from "./EntityAutocomplete";
 
@@ -42,4 +43,15 @@ test("ищет на сервере, выбирает и очищает знач�
 
   await user.click(screen.getByRole("button", { name: "Очистить" }));
   expect(screen.getByRole("status")).toHaveTextContent("null");
+});
+
+test("ошибка загрузки вариантов показывается вместо «Ничего не найдено»", async () => {
+  const fetchOptions = vi.fn(async () => {
+    throw new ApiError({ status: 0, code: "network_error", message: "Нет связи с сервером" });
+  });
+  const { user } = renderWithProviders(<Demo fetchOptions={fetchOptions} />);
+
+  await user.click(screen.getByLabelText("Руководитель"));
+
+  expect(await screen.findByText("Нет связи с сервером")).toBeInTheDocument();
 });
