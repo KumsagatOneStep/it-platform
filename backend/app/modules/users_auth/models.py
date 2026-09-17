@@ -31,7 +31,7 @@ class User(Base):
             values_callable=lambda enum: [member.value for member in enum],
         )
     )
-    department_id: Mapped[int | None] = mapped_column()
+    department_id: Mapped[int | None] = mapped_column(ForeignKey("common.departments.id"))
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     must_change_password: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

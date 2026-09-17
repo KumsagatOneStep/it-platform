@@ -66,20 +66,38 @@ type = "forbidden"
 source_modules = ["app.core"]
 forbidden_modules = ["app.modules"]
 
-# (включается в Task 10, когда появится app.modules.directories)
-# [[tool.importlinter.contracts]]
-# name = "Другие модули используют users_auth только через service и events"
-# type = "forbidden"
-# source_modules = ["app.modules.directories"]
-# forbidden_modules = [
-#     "app.modules.users_auth.models",
-#     "app.modules.users_auth.schemas",
-#     "app.modules.users_auth.passwords",
-#     "app.modules.users_auth.tokens",
-#     "app.modules.users_auth.throttle",
-#     "app.modules.users_auth.auth",
-#     "app.modules.users_auth.users",
-#     "app.modules.users_auth.deps",
-#     "app.modules.users_auth.router",
-# ]
-# allow_indirect_imports = true
+[[tool.importlinter.contracts]]
+name = "Другие модули используют users_auth только через service и events"
+type = "forbidden"
+source_modules = ["app.modules.directories"]
+forbidden_modules = [
+    "app.modules.users_auth.models",
+    "app.modules.users_auth.schemas",
+    "app.modules.users_auth.passwords",
+    "app.modules.users_auth.tokens",
+    "app.modules.users_auth.throttle",
+    "app.modules.users_auth.auth",
+    "app.modules.users_auth.users",
+    "app.modules.users_auth.deps",
+    "app.modules.users_auth.router",
+]
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "users_auth не зависит от directories (связь только через события)"
+type = "forbidden"
+source_modules = ["app.modules.users_auth"]
+forbidden_modules = ["app.modules.directories"]
+
+[[tool.importlinter.contracts]]
+name = "Другие модули используют directories только через service и events"
+type = "forbidden"
+source_modules = ["app.modules.users_auth"]
+forbidden_modules = [
+    "app.modules.directories.models",
+    "app.modules.directories.schemas",
+    "app.modules.directories.departments",
+    "app.modules.directories.handlers",
+    "app.modules.directories.router",
+]
+allow_indirect_imports = true
