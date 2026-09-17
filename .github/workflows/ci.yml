@@ -40,4 +40,8 @@ jobs:
       - run: uv run ruff check .
       - run: uv run mypy app tests
       - run: uv run lint-imports
+      - name: Миграции применяются и совпадают с моделями
+        env:
+          DATABASE_URL: postgresql+asyncpg://app:app@localhost:5432/it_platform_test
+        run: uv run alembic upgrade head && uv run alembic check
       - run: uv run pytest -q
