@@ -9,7 +9,11 @@ _STANDARD_ATTRS = set(vars(logging.LogRecord("", 0, "", 0, "", None, None))) | {
     "message",
     "asctime",
     "taskName",
+    "color_message",  # uvicorn дублирует сообщение с ANSI-цветами
 }
+
+# uvicorn настраивает свои логгеры (dictConfig) до импорта приложения.
+_UVICORN_LOGGERS = ("uvicorn", "uvicorn.error", "uvicorn.access")
 
 
 class JsonFormatter(logging.Formatter):
@@ -35,3 +39,7 @@ def configure_logging(level: str = "INFO") -> None:
     root = logging.getLogger()
     root.handlers = [handler]
     root.setLevel(level)
+    for name in _UVICORN_LOGGERS:
+        uvicorn_logger = logging.getLogger(name)
+        uvicorn_logger.handlers = []
+        uvicorn_logger.propagate = True
