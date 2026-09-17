@@ -25,6 +25,10 @@ from app.modules.users_auth.users import get_user_by_email, normalize_email
 
 logger = logging.getLogger(__name__)
 
+# Повтор ротированного refresh-токена в течение этого окна считается гонкой
+# параллельных /refresh (несколько вкладок), а не кражей: 401 без отзыва всех сессий.
+REFRESH_REUSE_GRACE_SECONDS = 30
+
 
 @dataclass(frozen=True)
 class TokenPair:
@@ -106,7 +110,12 @@ async def rotate_refresh_token(session: AsyncSession, raw: str | None) -> TokenP
     now = _now()
     if token.revoked_at is not None:
         if token.revoked_reason == "rotated":
-            # Повторное использование уже провёрнутого (ротированного) токена —
+            if now - token.revoked_at < timedelta(seconds=REFRESH_REUSE_GRACE_SECONDS):
+                # Почти одновременные /refresh с одной cookie: один запрос уже ротировал
+                # токен. Не признак кражи — сессию победителя не трогаем.
+                logger.warning("auth.refresh_concurrent_rotation", extra={"user_id": token.user_id})
+                raise _invalid_refresh()
+            # Повторное использование давно ротированного токена —
             # вероятная кража: отзываем все сессии пользователя.
             await revoke_all_refresh_tokens(session, token.user_id, reason="reuse_detected")
             await session.commit()

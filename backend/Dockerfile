@@ -2,7 +2,10 @@ FROM python:3.12-slim
 
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
 
-ENV UV_COMPILE_BYTECODE=1 \
+# Безопасный режим по умолчанию: проверки JWT_SECRET и COOKIE_SECURE (compose для
+# локальной разработки переопределяет APP_ENV=local).
+ENV APP_ENV=production \
+    UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy \
     UV_PROJECT_ENVIRONMENT=/opt/venv \
     PATH="/opt/venv/bin:$PATH"

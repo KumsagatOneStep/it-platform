@@ -1,13 +1,25 @@
+import logging
 from datetime import UTC, datetime, timedelta
 
+import pytest
 from fastapi import FastAPI
 from httpx import AsyncClient
 from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.modules.users_auth.auth import REFRESH_REUSE_GRACE_SECONDS
 from app.modules.users_auth.deps import AdminDep, CurrentUserDep
 from app.modules.users_auth.models import RefreshToken, UserRole
+from app.modules.users_auth.tokens import hash_refresh_token
 from tests.factories import DEFAULT_PASSWORD, login, make_user
+
+
+async def _shift_revoked_at(db_session: AsyncSession, raw: str, *, seconds: int) -> None:
+    await db_session.execute(
+        update(RefreshToken)
+        .where(RefreshToken.token_hash == hash_refresh_token(raw))
+        .values(revoked_at=datetime.now(UTC) - timedelta(seconds=seconds))
+    )
 
 
 def _add_probe_routes(app: FastAPI) -> None:
@@ -96,6 +108,7 @@ async def test_refresh_rotates_token_and_detects_reuse(
     assert rotated.status_code == 200
     new_refresh = rotated.cookies["refresh_token"]
     assert new_refresh != old_refresh
+    await _shift_revoked_at(db_session, old_refresh, seconds=REFRESH_REUSE_GRACE_SECONDS + 1)
 
     client.cookies.clear()
     reused = await client.post(
@@ -107,6 +120,36 @@ async def test_refresh_rotates_token_and_detects_reuse(
         "/api/auth/refresh", headers={"Cookie": f"refresh_token={new_refresh}"}
     )
     assert after_reuse.status_code == 401
+
+
+async def test_concurrent_refresh_replay_within_grace_keeps_other_sessions(
+    client: AsyncClient, db_session: AsyncSession, caplog: pytest.LogCaptureFixture
+) -> None:
+    user = await make_user(db_session)
+    login_response = await client.post(
+        "/api/auth/login", json={"email": user.email, "password": DEFAULT_PASSWORD}
+    )
+    old_refresh = login_response.cookies["refresh_token"]
+    rotated = await client.post("/api/auth/refresh")
+    assert rotated.status_code == 200
+    new_refresh = rotated.cookies["refresh_token"]
+    await _shift_revoked_at(db_session, old_refresh, seconds=REFRESH_REUSE_GRACE_SECONDS - 5)
+
+    client.cookies.clear()
+    with caplog.at_level(logging.WARNING, logger="app.modules.users_auth.auth"):
+        replay = await client.post(
+            "/api/auth/refresh", headers={"Cookie": f"refresh_token={old_refresh}"}
+        )
+
+    assert replay.status_code == 401
+    assert replay.json()["error"]["code"] == "invalid_refresh_token"
+    messages = [record.getMessage() for record in caplog.records]
+    assert "auth.refresh_concurrent_rotation" in messages
+    assert "auth.refresh_token_reuse" not in messages
+    still_valid = await client.post(
+        "/api/auth/refresh", headers={"Cookie": f"refresh_token={new_refresh}"}
+    )
+    assert still_valid.status_code == 200
 
 
 async def test_refresh_without_cookie_returns_401(client: AsyncClient) -> None:
