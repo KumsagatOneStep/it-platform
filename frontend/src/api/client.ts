@@ -56,6 +56,9 @@ const authMiddleware: Middleware = {
     retry.headers.set("Authorization", `Bearer ${token}`);
     const retried = await globalThis.fetch(retry);
     if (retried.status === 401) sessionHandlers().onSessionExpired();
+    if (retried.status === 403 && (await isPasswordChangeRequired(retried))) {
+      sessionHandlers().onPasswordChangeRequired();
+    }
     return retried;
   },
 

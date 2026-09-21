@@ -14,7 +14,9 @@ export function RequireAuth() {
 
   if (state.status === "loading") return <FullScreenLoader />;
   if (state.status === "guest") {
-    return <Navigate to={loginPathFor(location.pathname, location.search)} replace />;
+    const to =
+      state.reason === "logout" ? "/login" : loginPathFor(location.pathname, location.search);
+    return <Navigate to={to} replace />;
   }
   if (state.user.must_change_password && location.pathname !== CHANGE_PASSWORD_PATH) {
     return <Navigate to={CHANGE_PASSWORD_PATH} replace />;

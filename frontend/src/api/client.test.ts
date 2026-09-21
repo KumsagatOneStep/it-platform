@@ -104,6 +104,22 @@ test("неудачный refresh завершает сессию и отдаёт
   expect(getAccessToken()).toBeNull();
 });
 
+test("5xx/не-JSON ответ refresh не завершает сессию, а бросает ошибку", async () => {
+  setAccessToken("stale");
+  const session = trackSession();
+  server.use(
+    http.post("*/api/auth/refresh", () => new HttpResponse(null, { status: 502 })),
+    departmentsRequiring("fresh"),
+  );
+
+  const error = await unwrap(api.GET("/api/departments")).catch((e: unknown) => e);
+
+  expect(error).toBeInstanceOf(ApiError);
+  expect((error as ApiError).status).toBe(502);
+  expect(session.expired).toBe(0);
+  expect(getAccessToken()).toBe("stale");
+});
+
 test("401 после успешного refresh тоже завершает сессию", async () => {
   setAccessToken("stale");
   const session = trackSession();
@@ -128,6 +144,26 @@ test("401 на вход не запускает refresh", async () => {
     unwrap(api.POST("/api/auth/login", { body: { email: "a@b.ru", password: "x" } })),
   ).rejects.toMatchObject({ code: "invalid_credentials", message: "Неверный email или пароль" });
   expect(refresh.calls).toBe(0);
+});
+
+test("403 password_change_required после повтора запроса тоже сообщает о необходимости сменить пароль", async () => {
+  setAccessToken("stale");
+  const session = trackSession();
+  server.use(
+    refreshHandler({ calls: 0 }),
+    http.get("*/api/departments", ({ request }) =>
+      request.headers.get("Authorization") === "Bearer fresh"
+        ? HttpResponse.json(errorBody("password_change_required", "Необходимо сменить пароль"), {
+            status: 403,
+          })
+        : HttpResponse.json(errorBody("unauthorized", "Требуется вход"), { status: 401 }),
+    ),
+  );
+
+  await expect(unwrap(api.GET("/api/departments"))).rejects.toMatchObject({
+    code: "password_change_required",
+  });
+  expect(session.passwordChange).toBe(1);
 });
 
 test("403 password_change_required сообщает о необходимости сменить пароль", async () => {

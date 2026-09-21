@@ -19,15 +19,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState>({ status: "loading" });
   const channelRef = useRef<BroadcastChannel | null>(null);
 
-  const endSession = useCallback(() => {
-    setAccessToken(null);
-    queryClient.clear();
-    setState({ status: "guest" });
-  }, [queryClient]);
+  const endSession = useCallback(
+    (reason?: "logout") => {
+      setAccessToken(null);
+      queryClient.clear();
+      setState({ status: "guest", reason });
+    },
+    [queryClient],
+  );
 
   useEffect(() => {
     return setSessionHandlers({
-      onSessionExpired: endSession,
+      onSessionExpired: () => endSession(),
       onPasswordChangeRequired: () =>
         setState((current) =>
           current.status === "authenticated"
@@ -40,7 +43,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const channel = new BroadcastChannel(AUTH_CHANNEL);
     channel.onmessage = (event: MessageEvent) => {
-      if (event.data === LOGOUT_MESSAGE) endSession();
+      if (event.data === LOGOUT_MESSAGE) endSession("logout");
     };
     channelRef.current = channel;
     return () => {
@@ -57,6 +60,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const user = token ? await fetchMe() : null;
         if (!cancelled) setState(user ? { status: "authenticated", user } : { status: "guest" });
       } catch {
+        setAccessToken(null);
         if (!cancelled) setState({ status: "guest" });
       }
     };
@@ -99,9 +103,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch {
       // Выход на клиенте выполняется даже без ответа сервера.
     }
-    endSession();
+    endSession("logout");
     channelRef.current?.postMessage(LOGOUT_MESSAGE);
   }, [endSession]);
+
+  const reloadUser = useCallback(async () => {
+    const user = await fetchMe();
+    setState({ status: "authenticated", user });
+  }, []);
 
   const value = useMemo<AuthContextValue>(
     () => ({
@@ -110,8 +119,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       login,
       logout,
       changePassword,
+      reloadUser,
     }),
-    [state, login, logout, changePassword],
+    [state, login, logout, changePassword, reloadUser],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -1,5 +1,3 @@
-import { test, expect } from "vitest";
-
 import { theme } from "./theme";
 
 test("тема использует палитру и шрифт Modernize", () => {

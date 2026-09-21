@@ -1,5 +1,3 @@
-import { test, expect } from "vitest";
-
 import { formatDate, formatDateTime, initialsOf, ROLE_LABELS } from "./format";
 
 test("даты форматируются по-русски", () => {

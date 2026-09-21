@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 
 import type { Schemas, UserRole } from "../../api/types";
+import { useAuth } from "../auth";
 import { applyApiErrors, fieldByCode } from "../../shared/lib/applyApiErrors";
 import { ROLE_LABELS } from "../../shared/lib/format";
 import { useDepartments } from "../../shared/lookups/departments";
@@ -40,6 +41,7 @@ export function UserFormDialog({ user, onClose, onCreated, onBlocked }: UserForm
   const createUser = useCreateUser();
   const updateUser = useUpdateUser();
   const departments = useDepartments();
+  const { user: currentUser, reloadUser } = useAuth();
   const [formError, setFormError] = useState<string | null>(null);
   const {
     control,
@@ -64,6 +66,7 @@ export function UserFormDialog({ user, onClose, onCreated, onBlocked }: UserForm
         if (dirtyFields.role) body.role = values.role;
         if (dirtyFields.department_id) body.department_id = values.department_id;
         await updateUser.mutateAsync({ id: user.id, body });
+        if (currentUser?.id === user.id) await reloadUser();
         onClose();
       } else {
         onCreated(await createUser.mutateAsync(values));

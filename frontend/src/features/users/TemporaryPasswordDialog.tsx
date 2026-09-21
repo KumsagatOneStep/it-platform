@@ -31,7 +31,14 @@ export function TemporaryPasswordDialog({
     }
   };
   return (
-    <Dialog open onClose={onClose} maxWidth="sm" fullWidth>
+    <Dialog
+      open
+      onClose={(_, reason) => {
+        if (reason !== "backdropClick" && reason !== "escapeKeyDown") onClose();
+      }}
+      maxWidth="sm"
+      fullWidth
+    >
       <DialogTitle>Временный пароль</DialogTitle>
       <DialogContent>
         <Stack spacing={2} sx={{ pt: 1 }}>

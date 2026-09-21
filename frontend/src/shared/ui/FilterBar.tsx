@@ -1,8 +1,8 @@
 import { InputAdornment, MenuItem, Stack, TextField } from "@mui/material";
 import { IconSearch } from "@tabler/icons-react";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
-import { DEBOUNCE_MS } from "../lib/useDebouncedValue";
+import { useDebouncedValue } from "../lib/useDebouncedValue";
 
 export function FilterBar({ children }: { children: ReactNode }) {
   return (
@@ -25,16 +25,18 @@ interface SearchFieldProps {
 /** Поле поиска: сообщает значение не чаще раза в 300 мс. */
 export function SearchField({ value, onChange, placeholder = "Поиск" }: SearchFieldProps) {
   const [text, setText] = useState(value);
+  const debounced = useDebouncedValue(text);
+  const latest = useRef({ value, onChange });
 
   useEffect(() => {
-    setText(value);
-  }, [value]);
+    latest.current = { value, onChange };
+    setText((current) => (current.trim() === value.trim() ? current : value));
+  }, [value, onChange]);
 
+  // Срабатывает только на новый debounced-текст: внешний сброс value не возвращает старый ввод.
   useEffect(() => {
-    if (text === value) return;
-    const timer = setTimeout(() => onChange(text), DEBOUNCE_MS);
-    return () => clearTimeout(timer);
-  }, [text, value, onChange]);
+    if (debounced.trim() !== latest.current.value.trim()) latest.current.onChange(debounced);
+  }, [debounced]);
 
   return (
     <TextField
@@ -44,7 +46,7 @@ export function SearchField({ value, onChange, placeholder = "Поиск" }: Sea
       placeholder={placeholder}
       sx={{ minWidth: 260 }}
       slotProps={{
-        htmlInput: { "aria-label": placeholder },
+        htmlInput: { "aria-label": placeholder, maxLength: 100 },
         input: {
           startAdornment: (
             <InputAdornment position="start">

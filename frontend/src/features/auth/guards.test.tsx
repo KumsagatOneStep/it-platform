@@ -116,6 +116,18 @@ test("выход в другой вкладке завершает сессию 
   await waitFor(() => expect(screen.getByText("пользователь: гость")).toBeInTheDocument());
 });
 
+test("выход в другой вкладке приводит на /login без next", async () => {
+  mockSignedIn();
+  renderApp("/admin/users");
+  await screen.findByText("пользователь: Иванов Иван");
+
+  const otherTab = new BroadcastChannel(AUTH_CHANNEL);
+  otherTab.postMessage("logout");
+  otherTab.close();
+
+  expect(await screen.findByText("путь: /login")).toBeInTheDocument();
+});
+
 test("safeNext пропускает только относительные пути", () => {
   expect(safeNext("/admin/users?q=1")).toBe("/admin/users?q=1");
   expect(safeNext("//evil.example")).toBe("/");

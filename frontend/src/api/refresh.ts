@@ -1,4 +1,4 @@
-import { networkError } from "./errors";
+import { apiErrorFromBody, networkError } from "./errors";
 import { getAccessToken, setAccessToken } from "./session";
 import type { Schemas } from "./types";
 
@@ -34,8 +34,12 @@ async function refreshUnlessUpdated(staleToken: string | null): Promise<string |
     throw networkError();
   }
   if (!response.ok) {
-    setAccessToken(null);
-    return null;
+    if (response.status === 400 || response.status === 401 || response.status === 403) {
+      setAccessToken(null);
+      return null;
+    }
+    const errorBody: unknown = await response.json().catch(() => null);
+    throw apiErrorFromBody(response.status, errorBody, response.headers.get("X-Request-ID"));
   }
   const body = (await response.json()) as Schemas["AccessTokenResponse"];
   setAccessToken(body.access_token);

@@ -14,7 +14,12 @@ export function StatusPage({ code, title, text }: StatusPageProps) {
   return (
     <Box sx={{ minHeight: "60vh", display: "grid", placeItems: "center", textAlign: "center" }}>
       <Box>
-        <Typography variant="h1" color="primary" sx={{ fontSize: "4rem", lineHeight: 1 }}>
+        <Typography
+          variant="h1"
+          component="p"
+          color="primary"
+          sx={{ fontSize: "4rem", lineHeight: 1 }}
+        >
           {code}
         </Typography>
         <Typography variant="h4" component="h1" sx={{ mt: 2 }}>

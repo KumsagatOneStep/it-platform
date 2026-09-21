@@ -3,7 +3,7 @@ import { http, HttpResponse } from "msw";
 
 import type { Schemas } from "../../api/types";
 import { renderApp } from "../../test/app";
-import { mockSignedIn } from "../../test/auth";
+import { makeMe, mockSignedIn } from "../../test/auth";
 import { makeUser, page } from "../../test/fixtures";
 import { errorBody } from "../../test/http";
 import { server } from "../../test/server";
@@ -71,6 +71,12 @@ test("создание пользователя показывает време�
     role: "employee",
     department_id: 3,
   });
+
+  await user.keyboard("{Escape}");
+  expect(screen.getByDisplayValue("Tmp-12345")).toBeInTheDocument();
+
+  await user.click(screen.getByRole("button", { name: "Готово" }));
+  await waitFor(() => expect(screen.queryByDisplayValue("Tmp-12345")).not.toBeInTheDocument());
 });
 
 test("email_taken показывается под полем email", async () => {
@@ -144,4 +150,31 @@ test("редактирование отправляет только измен�
 
   await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
   expect(patched).toEqual({ role: "manager" });
+});
+
+test("администратор меняет свою роль — данные пользователя перезапрашиваются", async () => {
+  mockSignedIn(makeMe({ id: 1, full_name: "Иванов Иван", role: "admin" }));
+  mockUsers([makeUser({ id: 1, full_name: "Кузнецов Пётр", role: "admin", department_id: 3 })]);
+  let meCalls = 0;
+  server.use(
+    http.get("*/api/auth/me", () => {
+      meCalls += 1;
+      const role = meCalls === 1 ? "admin" : "manager";
+      return HttpResponse.json(makeMe({ id: 1, full_name: "Иванов Иван", role }));
+    }),
+    http.patch("*/api/admin/users/:id", () =>
+      HttpResponse.json(makeUser({ id: 1, full_name: "Кузнецов Пётр", role: "manager" })),
+    ),
+  );
+  const { user } = renderApp("/admin/users");
+
+  await openRowMenu(user, "Кузнецов Пётр");
+  await user.click(await screen.findByRole("menuitem", { name: "Редактировать" }));
+  const dialog = await screen.findByRole("dialog");
+  await user.click(within(dialog).getByLabelText("Роль"));
+  await user.click(await screen.findByRole("option", { name: "Руководитель" }));
+  await user.click(within(dialog).getByRole("button", { name: "Сохранить" }));
+
+  await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+  await waitFor(() => expect(meCalls).toBe(2));
 });

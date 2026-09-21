@@ -1,5 +1,3 @@
-import { test, expect, vi } from "vitest";
-
 import { ApiError } from "../api/errors";
 import { createQueryClient, logServerError } from "./queryClient";
 
