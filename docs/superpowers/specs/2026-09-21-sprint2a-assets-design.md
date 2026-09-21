@@ -90,7 +90,7 @@
 
 ## 4. API
 
-Все ответы и ошибки — в формате спринта 1 (`{code, message, details}`), списки — `Page[T]` с `limit`/`offset`.
+Все ответы и ошибки — в формате спринта 1 (`{"error": {code, message, details}}`), списки — `Page[T]` с `limit`/`offset`.
 
 | Запрос | Кто | Описание |
 |---|---|---|
@@ -103,13 +103,13 @@
 | `POST /api/assets/issue` | Admin | `{owner_id, asset_ids[1..50], reason_id?, comment?}` — выдача из `in_stock`, всё или ничего |
 | `POST /api/assets/return` | Admin | `{asset_ids[1..50], location_id?, comment?}` — возврат из `in_use`, всё или ничего |
 
-`AssetRead` содержит id и названия связанных сущностей (тип, локация, владелец) — фронтенду не нужны дополнительные запросы для таблицы.
+`AssetRead` содержит id и названия связанных сущностей плоскими полями (`asset_type_name`, `location_name`, `owner_name`), `AssetEventRead` — имена владельцев, локаций, причины и исполнителя. Названия подставляет backend через `service.py` других модулей: Employee и Manager не имеют доступа к списку пользователей.
 
 **Область видимости** (п. 2.3 ТЗ): Employee — `owner_id = self`; Manager — `owner_id` среди сотрудников своего отдела; Admin — всё. Актив вне области — 404.
 
 **Межмодульные вызовы** (только через `service.py`, контракты import-linter):
-- `users_auth.service`: `get_user_info` (есть), новая `list_department_user_ids(session, department_id)`.
-- `directories.service`: новая `get_reference_item(session, kind, item_id)` — существование, `is_active`, `applicability` для причин.
+- `users_auth.service`: `get_user_info` (есть), новые `get_user_names(session, user_ids)` и `list_department_user_ids(session, department_id)`.
+- `directories.service`: новые `get_reference_item(session, kind, item_id)` — существование, `is_active`, `applicability` для причин — и `get_reference_names(session, kind, item_ids)`.
 - `directories` и `users_auth` не импортируют `assets`.
 - Новый контракт import-linter: `assets` не импортирует модели, схемы и внутренние файлы других модулей.
 
@@ -117,10 +117,10 @@
 
 ## 5. Ошибки и конкурентный доступ
 
-- **Одна операция:** `UPDATE … WHERE id = :id AND status = ANY(:from_statuses) RETURNING …`; если строка не обновилась — 409 `operation_not_allowed`, `details: {status}` (текущий). Событие и аудит — в той же транзакции. Операции увеличивают `version`.
+- **Одна операция:** строка актива блокируется `SELECT … FOR UPDATE`, статус проверяется под блокировкой (гарантия та же, что у условного `UPDATE` из п. 3.2 ТЗ: параллельная операция ждёт коммита и видит новый статус). Недопустимый статус — 409 `operation_not_allowed`, `details: {status}` (текущий). Событие и аудит — в той же транзакции. Операции увеличивают `version`.
 - **Массовые выдача и возврат:** `SELECT … WHERE id = ANY(:ids) ORDER BY id FOR UPDATE`; если какой-то актив не найден или не в нужном статусе — 409 `assets_unavailable`, `details: [{asset_id, inventory_number, status}]`, ничего не меняется.
-- **Правка:** `UPDATE … WHERE id = :id AND version = :version`; расхождение — 409 `version_conflict`. Правка списанного — 409 `asset_written_off`.
-- **Уникальность:** проверка перед записью и перехват нарушения уникального индекса → 409 `inventory_number_taken` / `serial_number_taken`.
+- **Правка:** строка блокируется `SELECT … FOR UPDATE`, затем сравнивается `version`; расхождение — 409 `version_conflict`. Правка без фактических изменений не меняет `version` и не пишет событие. Правка списанного — 409 `asset_written_off`.
+- **Уникальность:** нарушение уникального индекса перехватывается и превращается в 409 `inventory_number_taken` / `serial_number_taken` (как `email_taken` в спринте 1; отдельная проверка перед записью не нужна). Пустой после обрезки номер или модель — 422 `inventory_number_blank` / `model_blank`.
 - **Проверки (422):** `recipient_invalid` (получатель не найден или деактивирован), `reason_invalid` (неактивна или `applicability = stock`), `reason_required` (списание без причины), `location_invalid`, `asset_type_invalid` (неактивное значение; при правке проверяется только изменённое поле).
 - **Роли:** операции, создание и правка не-Admin — 403 `insufficient_role`.
 
@@ -128,9 +128,9 @@
 
 Фича `features/assets`, раздел меню «Склад и техника». Для Employee и Manager в разделе только реестр.
 
-**Реестр** `/equipment/assets`: `DataTable` — инв. номер, тип, модель, статус (`Chip`, цвета: на складе — success, резерв — info, в работе — primary, в ремонте — warning, списана — default), владелец, локация, гарантия до. Фильтры в URL (`useUrlFilters`): статус (множественный), тип, владелец (`EntityAutocomplete`, не показывается Employee), локация, «Требует проверки» (только Admin), поиск (`SearchField`). Подпись области: «Ваша техника» (Employee), «Техника отдела» (Manager). Admin: кнопка «Добавить» → `AssetFormDialog`. Клик по строке открывает карточку.
+**Реестр** `/equipment/assets`: `DataTable` — инв. номер, тип, модель, статус (`Chip`, цвета: на складе — success, резерв — info, в работе — primary, в ремонте — warning, списана — default), владелец, локация, гарантия до. Фильтры в URL (`useUrlFilters`): статус (один из; по умолчанию «Все, кроме списанных» — пяти статусов хватает одиночного выбора, API при этом принимает несколько), тип, локация, поиск (`SearchField`); только Admin — владелец (`EntityAutocomplete`, варианты из `/api/admin/users`) и «Требует проверки». Подпись области: «Ваша техника» (Employee), «Техника сотрудников вашего отдела» (Manager). Admin: кнопка «Добавить» → `AssetFormDialog`, после создания открывается карточка. Инвентарный номер в строке — ссылка на карточку (общий `DataTable` не меняется).
 
-**Карточка** `/equipment/assets/:id`: шапка — инв. номер, модель, статус; для Admin «Редактировать» и меню «Действия» из `allowed_operations`. Вкладки «Информация» и «История». Один `AssetOperationDialog`: поля по операции (п. 3), для `write_off` — предупреждение о финальном статусе. 409 `operation_not_allowed` → уведомление «Статус актива изменился» и перезагрузка карточки. 409 `version_conflict` в форме правки → сообщение «Данные изменил другой пользователь» с кнопкой «Обновить».
+**Карточка** `/equipment/assets/:id`: шапка — инв. номер, модель, статус; для Admin «Редактировать» и меню «Действия» из `allowed_operations`. Вкладки «Информация» и «История». Один `AssetOperationDialog`: поля по операции (п. 3), для `write_off` — предупреждение о финальном статусе. 409 `operation_not_allowed` → уведомление «Статус актива изменился» и перезагрузка карточки. 409 `version_conflict` в форме правки → форма закрывается, уведомление «Данные изменил другой пользователь — карточка обновлена, внесите правки заново», карточка перезагружается.
 
 **Выдать / принять** `/equipment/issue`, только Admin:
 - «Выдать»: кому (активные сотрудники), что (множественный автокомплит активов `in_stock`), причина (`applicability` assets/both), комментарий. 409 `assets_unavailable` — форма остаётся открытой, недоступные активы подсвечены.
