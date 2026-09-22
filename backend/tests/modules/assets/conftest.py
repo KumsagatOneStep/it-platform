@@ -7,11 +7,13 @@ from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.modules.assets.models import Asset, AssetStatus
+from app.modules.assets.stock_models import StockItem
 from app.modules.directories.models import (
     AssetType,
     IssueReason,
     IssueReasonApplicability,
     Location,
+    StockCategory,
 )
 
 
@@ -89,3 +91,58 @@ async def create_via_api(
     assert response.status_code == 201, response.text
     body: dict[str, Any] = response.json()
     return body
+
+
+@dataclass(frozen=True)
+class StockRefs:
+    cartridges: StockCategory
+    paper: StockCategory
+    warehouse: Location
+    office: Location
+
+
+@pytest.fixture
+async def stock_refs(db_session: AsyncSession, refs: Refs) -> StockRefs:
+    cartridges = StockCategory(name="Картриджи")
+    paper = StockCategory(name="Бумага")
+    db_session.add_all([cartridges, paper])
+    await db_session.flush()
+    return StockRefs(cartridges, paper, refs.warehouse, refs.office)
+
+
+async def make_stock_item(
+    session: AsyncSession,
+    stock_refs: StockRefs,
+    *,
+    name: str = "Картридж HP 85A",
+    quantity: int = 0,
+    min_quantity: int = 0,
+    location: Location | None = None,
+    category: StockCategory | None = None,
+    is_active: bool = True,
+) -> StockItem:
+    item = StockItem(
+        name=name,
+        stock_category_id=(category or stock_refs.cartridges).id,
+        unit="шт",
+        location_id=(location or stock_refs.warehouse).id,
+        quantity=quantity,
+        min_quantity=min_quantity,
+        is_active=is_active,
+        version=1,
+    )
+    session.add(item)
+    await session.flush()
+    return item
+
+
+def stock_item_payload(stock_refs: StockRefs, **overrides: object) -> dict[str, object]:
+    payload: dict[str, object] = {
+        "name": "Картридж HP 85A",
+        "stock_category_id": stock_refs.cartridges.id,
+        "unit": "шт",
+        "location_id": stock_refs.warehouse.id,
+        "min_quantity": 2,
+    }
+    payload.update(overrides)
+    return payload

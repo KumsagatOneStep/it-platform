@@ -7,6 +7,7 @@ from app.modules.directories.models import (
     IssueReason,
     IssueReasonApplicability,
     Location,
+    StockCategory,
 )
 from app.modules.directories.service import get_reference_item, get_reference_names
 from app.modules.users_auth.service import get_user_names, list_department_user_ids
@@ -61,4 +62,18 @@ async def test_get_reference_names(db_session: AsyncSession) -> None:
 
     assert await get_reference_names(db_session, "locations", {location.id}) == {
         location.id: "Склад"
+    }
+
+
+async def test_stock_categories_reference(db_session: AsyncSession) -> None:
+    category = StockCategory(name="Картриджи", is_active=False)
+    db_session.add(category)
+    await db_session.flush()
+
+    info = await get_reference_item(db_session, "stock-categories", category.id)
+
+    assert info is not None
+    assert info.is_active is False
+    assert await get_reference_names(db_session, "stock-categories", {category.id}) == {
+        category.id: "Картриджи"
     }

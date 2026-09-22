@@ -603,6 +603,42 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/stock-items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Stock Items */
+        get: operations["list_stock_items_api_stock_items_get"];
+        put?: never;
+        /** Create Stock Item */
+        post: operations["create_stock_item_api_stock_items_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/stock-items/{item_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Stock Item */
+        get: operations["get_stock_item_api_stock_items__item_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Stock Item */
+        patch: operations["update_stock_item_api_stock_items__item_id__patch"];
+        trace?: never;
+    };
     "/api/users": {
         parameters: {
             query?: never;
@@ -1045,6 +1081,17 @@ export interface components {
             /** Total */
             total: number;
         };
+        /** Page[StockItemRead] */
+        Page_StockItemRead_: {
+            /** Items */
+            items: components["schemas"]["StockItemRead"][];
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
+            /** Total */
+            total: number;
+        };
         /** Page[UserRead] */
         Page_UserRead_: {
             /** Items */
@@ -1104,6 +1151,77 @@ export interface components {
             is_active?: boolean | null;
             /** Name */
             name?: string | null;
+        };
+        /** StockItemCreate */
+        StockItemCreate: {
+            /** Location Id */
+            location_id: number;
+            /**
+             * Min Quantity
+             * @default 0
+             */
+            min_quantity: number;
+            /** Name */
+            name: string;
+            /** Stock Category Id */
+            stock_category_id: number;
+            /** Unit */
+            unit: string;
+        };
+        /** StockItemRead */
+        StockItemRead: {
+            /** Category Name */
+            category_name: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Id */
+            id: number;
+            /** Is Active */
+            is_active: boolean;
+            /** Is Low */
+            is_low: boolean;
+            /** Location Id */
+            location_id: number;
+            /** Location Name */
+            location_name: string;
+            /** Min Quantity */
+            min_quantity: number;
+            /** Name */
+            name: string;
+            /** Quantity */
+            quantity: number;
+            /** Stock Category Id */
+            stock_category_id: number;
+            /** Unit */
+            unit: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Version */
+            version: number;
+        };
+        /**
+         * StockItemUpdate
+         * @description Склад не меняется правкой — только перемещением количества.
+         */
+        StockItemUpdate: {
+            /** Is Active */
+            is_active?: boolean | null;
+            /** Min Quantity */
+            min_quantity?: number | null;
+            /** Name */
+            name?: string | null;
+            /** Stock Category Id */
+            stock_category_id?: number | null;
+            /** Unit */
+            unit?: string | null;
+            /** Version */
+            version: number;
         };
         /** TemporaryPasswordResponse */
         TemporaryPasswordResponse: {
@@ -3180,6 +3298,214 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TicketTypeRead"][];
+                };
+            };
+            /** @description Некорректные данные запроса */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Внутренняя ошибка сервера */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Ошибка запроса */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    list_stock_items_api_stock_items_get: {
+        parameters: {
+            query?: {
+                category_id?: number | null;
+                location_id?: number | null;
+                q?: string | null;
+                low_stock?: boolean;
+                include_inactive?: boolean;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_StockItemRead_"];
+                };
+            };
+            /** @description Некорректные данные запроса */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Внутренняя ошибка сервера */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Ошибка запроса */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    create_stock_item_api_stock_items_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StockItemCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StockItemRead"];
+                };
+            };
+            /** @description Некорректные данные запроса */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Внутренняя ошибка сервера */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Ошибка запроса */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    get_stock_item_api_stock_items__item_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StockItemRead"];
+                };
+            };
+            /** @description Некорректные данные запроса */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Внутренняя ошибка сервера */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Ошибка запроса */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    update_stock_item_api_stock_items__item_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StockItemUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StockItemRead"];
                 };
             };
             /** @description Некорректные данные запроса */

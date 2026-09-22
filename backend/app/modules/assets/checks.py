@@ -23,11 +23,34 @@ async def check_location(session: AsyncSession, location_id: int) -> None:
         )
 
 
-async def check_reason(session: AsyncSession, reason_id: int) -> None:
-    item = await get_reference_item(session, "issue-reasons", reason_id)
-    if item is None or not item.is_active or item.applicability == "stock":
+async def check_stock_category(session: AsyncSession, category_id: int) -> None:
+    item = await get_reference_item(session, "stock-categories", category_id)
+    if item is None or not item.is_active:
         raise ValidationFailedError(
-            "Причина не найдена, деактивирована или не применяется к технике",
+            "Категория не найдена или деактивирована", code="category_invalid"
+        )
+
+
+def _reason_fits(applicability: str | None, *, assets: bool, stock: bool) -> bool:
+    """Причина покрывает весь состав операции: техника, расходники или и то и другое."""
+    if applicability == "both":
+        return True
+    if assets and stock:
+        return False
+    return applicability == ("assets" if assets else "stock")
+
+
+async def check_reason(
+    session: AsyncSession, reason_id: int, *, assets: bool = True, stock: bool = False
+) -> None:
+    item = await get_reference_item(session, "issue-reasons", reason_id)
+    if (
+        item is None
+        or not item.is_active
+        or not _reason_fits(item.applicability, assets=assets, stock=stock)
+    ):
+        raise ValidationFailedError(
+            "Причина не найдена, деактивирована или не подходит к операции",
             code="reason_invalid",
         )
 

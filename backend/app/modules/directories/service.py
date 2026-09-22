@@ -9,15 +9,22 @@ from typing import Literal
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.modules.directories.models import AssetType, Department, IssueReason, Location
+from app.modules.directories.models import (
+    AssetType,
+    Department,
+    IssueReason,
+    Location,
+    StockCategory,
+)
 
-ReferenceKind = Literal["locations", "asset-types", "issue-reasons"]
+ReferenceKind = Literal["locations", "asset-types", "stock-categories", "issue-reasons"]
 
-_ReferenceModel = Location | AssetType | IssueReason
+_ReferenceModel = Location | AssetType | StockCategory | IssueReason
 
 _REFERENCE_MODELS: dict[ReferenceKind, type[_ReferenceModel]] = {
     "locations": Location,
     "asset-types": AssetType,
+    "stock-categories": StockCategory,
     "issue-reasons": IssueReason,
 }
 
