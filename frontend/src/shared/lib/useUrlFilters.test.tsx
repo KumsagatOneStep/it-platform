@@ -1,7 +1,7 @@
 import { screen } from "@testing-library/react";
 
 import { renderWithProviders } from "../../test/render";
-import { booleanParam, enumParam, textParam, useUrlFilters } from "./useUrlFilters";
+import { booleanParam, dateParam, enumParam, textParam, useUrlFilters } from "./useUrlFilters";
 
 const schema = {
   q: textParam,
@@ -42,4 +42,11 @@ test("смена фильтра пишет его в URL и сбрасывает
 
   await user.click(screen.getByRole("button", { name: "роль" }));
   expect(router.state.location.search).toBe("?q=%D0%B8%D0%B2&limit=50&role=manager");
+});
+
+test("dateParam принимает только дату YYYY-MM-DD", () => {
+  expect(dateParam.parse("2026-09-22")).toBe("2026-09-22");
+  expect(dateParam.parse("22.09.2026")).toBeNull();
+  expect(dateParam.parse(null)).toBeNull();
+  expect(dateParam.serialize(null)).toBeNull();
 });

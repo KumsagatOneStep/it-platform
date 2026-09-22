@@ -30,6 +30,12 @@ export const idParam: UrlParam<number | null> = {
   serialize: (value) => (value === null ? null : String(value)),
 };
 
+/** Дата «YYYY-MM-DD» (значение input type="date"). */
+export const dateParam: UrlParam<string | null> = {
+  parse: (raw) => (raw && /^\d{4}-\d{2}-\d{2}$/.test(raw) ? raw : null),
+  serialize: (value) => value,
+};
+
 export const booleanParam: UrlParam<boolean | null> = {
   parse: (raw) => (raw === "true" ? true : raw === "false" ? false : null),
   serialize: (value) => (value === null ? null : String(value)),

@@ -3,6 +3,7 @@ import {
   IconBook2,
   IconBuildingCommunity,
   IconDeviceLaptop,
+  IconHistory,
   IconLayoutDashboard,
   IconPackage,
   IconUserCircle,
@@ -37,6 +38,12 @@ export const MENU: readonly MenuSection[] = [
     items: [
       { label: "Реестр техники", to: "/equipment/assets", icon: IconDeviceLaptop },
       { label: "Расходники", to: "/equipment/stock", icon: IconPackage, roles: ["admin"] },
+      {
+        label: "История движений",
+        to: "/equipment/movements",
+        icon: IconHistory,
+        roles: ["admin"],
+      },
       {
         label: "Выдать / принять",
         to: "/equipment/issue",

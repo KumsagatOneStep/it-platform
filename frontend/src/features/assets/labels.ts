@@ -48,9 +48,17 @@ const EVENT_LABELS: Record<Schemas["AssetEventType"], string> = {
   written_off: "Списание",
 };
 
+/** Название события техники: операция, если есть, иначе тип события. */
+export function assetEventLabel(
+  eventType: Schemas["AssetEventType"],
+  operation: Operation | null,
+): string {
+  return operation ? OPERATION_LABELS[operation] : EVENT_LABELS[eventType];
+}
+
 /** Заголовок события: название операции, если есть, иначе тип события. */
 export function eventTitle(event: AssetEvent): string {
-  return event.operation ? OPERATION_LABELS[event.operation] : EVENT_LABELS[event.event_type];
+  return assetEventLabel(event.event_type, event.operation);
 }
 
 export const FIELD_LABELS: Record<string, string> = {

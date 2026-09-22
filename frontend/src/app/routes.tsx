@@ -13,6 +13,7 @@ import { AssetPage, AssetsPage, IssuePage } from "../features/assets";
 import { DepartmentsPage } from "../features/departments";
 import { DirectoriesPage } from "../features/directories";
 import { HomePage } from "../features/home";
+import { MovementsPage } from "../features/movements";
 import { StockItemPage, StockPage } from "../features/stock";
 import { UsersPage } from "../features/users";
 import { BlankLayout } from "../layout/BlankLayout";
@@ -56,6 +57,7 @@ export const routes: RouteObject[] = [
             children: [
               { path: "/equipment/stock", element: <StockPage /> },
               { path: "/equipment/stock/:id", element: <StockItemPage /> },
+              { path: "/equipment/movements", element: <MovementsPage /> },
               { path: "/equipment/issue", element: <IssuePage /> },
               { path: "/admin/users", element: <UsersPage /> },
               { path: "/admin/departments", element: <DepartmentsPage /> },
