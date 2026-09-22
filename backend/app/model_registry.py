@@ -7,5 +7,6 @@ users.department_id → common.departments) не разрешаются при f
 
 from app.core import audit  # noqa: F401
 from app.modules.assets import models as assets_models  # noqa: F401
+from app.modules.assets import stock_models  # noqa: F401
 from app.modules.directories import models as directories_models  # noqa: F401
 from app.modules.users_auth import models as users_auth_models  # noqa: F401
