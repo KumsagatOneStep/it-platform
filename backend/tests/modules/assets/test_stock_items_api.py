@@ -146,6 +146,7 @@ async def test_list_filters(
     assert await ids(location_id=stock_refs.office.id) == [no_min.id]
     assert await ids(q="hp") == [no_min.id, low.id]
     assert await ids(low_stock=True) == [low.id]
+    assert await ids(in_stock=True) == [ok.id, low.id]
     assert inactive.id in await ids(include_inactive=True)
 
 

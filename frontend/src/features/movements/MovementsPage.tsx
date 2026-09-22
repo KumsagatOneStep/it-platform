@@ -4,11 +4,7 @@ import { Link } from "react-router";
 import { formatDateTime } from "../../shared/lib/format";
 import { dateParam, enumParam, idParam, useUrlFilters } from "../../shared/lib/useUrlFilters";
 import { useLocations } from "../../shared/lookups/directories";
-import {
-  ACTIVE_USER_OPTIONS_KEY,
-  searchActiveUserOptions,
-  useUserNames,
-} from "../../shared/lookups/users";
+import { searchUserOptions, USER_OPTIONS_KEY, useUserNames } from "../../shared/lookups/users";
 import { DataTable, type Column } from "../../shared/ui/DataTable";
 import { EntityAutocomplete } from "../../shared/ui/EntityAutocomplete";
 import { FilterBar, FilterSelect } from "../../shared/ui/FilterBar";
@@ -135,16 +131,16 @@ export function MovementsPage() {
           label="Сотрудник"
           value={filters.person}
           onChange={(id) => setFilter("person", id)}
-          fetchOptions={searchActiveUserOptions}
-          queryKey={ACTIVE_USER_OPTIONS_KEY}
+          fetchOptions={searchUserOptions}
+          queryKey={USER_OPTIONS_KEY}
           labelFor={nameOf}
         />
         <EntityAutocomplete
           label="Кто выполнил"
           value={filters.performer}
           onChange={(id) => setFilter("performer", id)}
-          fetchOptions={searchActiveUserOptions}
-          queryKey={ACTIVE_USER_OPTIONS_KEY}
+          fetchOptions={searchUserOptions}
+          queryKey={USER_OPTIONS_KEY}
           labelFor={nameOf}
         />
         <FilterSelect

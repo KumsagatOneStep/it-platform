@@ -40,6 +40,8 @@ class UnavailableStockLine(BaseModel):
     name: str | None
     requested: int
     available: int | None
+    is_active: bool | None
+    """False — позиция деактивирована; None — не найдена."""
 
 
 class CheckoutUnavailable(BaseModel):

@@ -58,6 +58,7 @@ def _unavailable_stock(
                 name=item.name if item else None,
                 requested=line.quantity,
                 available=item.quantity if item else None,
+                is_active=item.is_active if item else None,
             )
         )
     return problems

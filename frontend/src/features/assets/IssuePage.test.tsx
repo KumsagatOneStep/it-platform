@@ -88,16 +88,18 @@ test("выдача: 422 recipient_invalid показывает ошибку у �
   expect(within(section).queryByRole("alert")).not.toBeInTheDocument();
 });
 
+/** Позиции для выбора в строках выдачи; in_stock=true отсекает нулевые, как backend. */
 function mockStockOptions() {
+  const items = [
+    makeStockItem(),
+    makeStockItem({ id: 201, name: "Бумага A4", unit: "пачка", quantity: 0 }),
+  ];
   server.use(
-    http.get("*/api/stock-items", () =>
-      HttpResponse.json(
-        page([
-          makeStockItem(),
-          makeStockItem({ id: 201, name: "Бумага A4", unit: "пачка", quantity: 0 }),
-        ]),
-      ),
-    ),
+    http.get("*/api/stock-items", ({ request }) => {
+      const inStock = new URL(request.url).searchParams.get("in_stock");
+      expect(inStock).toBe("true");
+      return HttpResponse.json(page(items.filter((item) => item.quantity > 0)));
+    }),
   );
 }
 
@@ -178,6 +180,7 @@ test("расходники: количество больше остатка н�
   await user.click(within(section).getByRole("button", { name: "Выдать" }));
 
   expect(await within(section).findByText("Доступно 12 шт")).toBeInTheDocument();
+  expect(within(section).getByText("Проверьте строки расходников")).toBeInTheDocument();
   expect(posted).toBe(false);
 });
 
@@ -190,7 +193,15 @@ test("расходники: при 409 у строки показывается 
       HttpResponse.json(
         errorBody("checkout_unavailable", "Часть недоступна", {
           assets: [],
-          stock: [{ stock_item_id: 200, name: "Картридж HP 85A", requested: 5, available: 1 }],
+          stock: [
+            {
+              stock_item_id: 200,
+              name: "Картридж HP 85A",
+              requested: 5,
+              available: 1,
+              is_active: true,
+            },
+          ],
         }),
         { status: 409 },
       ),
@@ -209,6 +220,39 @@ test("расходники: при 409 у строки показывается 
 
   expect(await within(section).findByText(/выделены красным/)).toBeInTheDocument();
   expect(within(section).getByText("На складе осталось 1 шт")).toBeInTheDocument();
+});
+
+test("расходники: при 409 деактивированная позиция подписана отдельно", async () => {
+  mockSignedIn();
+  mockAssetLookups();
+  mockStockOptions();
+  server.use(
+    http.post("*/api/equipment/checkout", () =>
+      HttpResponse.json(
+        errorBody("checkout_unavailable", "Часть недоступна", {
+          assets: [],
+          stock: [
+            {
+              stock_item_id: 200,
+              name: "Картридж HP 85A",
+              requested: 1,
+              available: 0,
+              is_active: false,
+            },
+          ],
+        }),
+        { status: 409 },
+      ),
+    ),
+  );
+  const { user } = renderApp("/equipment/issue");
+
+  const section = await screen.findByRole("region", { name: "Выдать" });
+  await pickEmployee(user, section, "Кому");
+  await addStockLine(user, section, "1");
+  await user.click(within(section).getByRole("button", { name: "Выдать" }));
+
+  expect(await within(section).findByText("Позиция деактивирована")).toBeInTheDocument();
 });
 
 test("выдача без сотрудника и техники подсказывает поля и не отправляет запрос", async () => {

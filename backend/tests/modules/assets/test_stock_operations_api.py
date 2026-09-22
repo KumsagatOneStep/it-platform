@@ -302,3 +302,32 @@ async def test_operations_forbidden_for_non_admin(
 
     assert status == 403
     assert history.status_code == 403
+
+
+async def test_transfer_rejects_target_with_other_unit(
+    client: AsyncClient,
+    admin_headers: dict[str, str],
+    stock_refs: StockRefs,
+    db_session: AsyncSession,
+) -> None:
+    item = await make_stock_item(db_session, stock_refs, name="Кабель UTP", quantity=5)
+    target = await make_stock_item(
+        db_session, stock_refs, name="Кабель UTP", location=stock_refs.office
+    )
+    target.unit = "м"
+    await db_session.flush()
+
+    status, body = await _operate(
+        client,
+        admin_headers,
+        item.id,
+        operation="transfer",
+        quantity=2,
+        to_location_id=stock_refs.office.id,
+    )
+
+    assert status == 409
+    assert body["error"]["code"] == "stock_unit_mismatch"
+    assert body["error"]["details"] == {"source_unit": "шт", "target_unit": "м"}
+    await db_session.refresh(item)
+    assert item.quantity == 5

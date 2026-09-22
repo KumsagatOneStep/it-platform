@@ -72,7 +72,7 @@ test("карточка: сведения, низкий остаток и ист�
   expect(within(receipt).getByText("Накладная 15")).toBeInTheDocument();
 });
 
-test("приход: количество и дата документа по умолчанию — сегодня", async () => {
+test("приход: дата документа по умолчанию — сегодня, её подставляет сервер", async () => {
   mockSignedIn();
   mockStockLookups();
   const card = mockCard();
@@ -86,9 +86,28 @@ test("приход: количество и дата документа по у�
 
   await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
   expect(bodies).toEqual([
-    { operation: "receipt", quantity: 5, document_date: localDateIso(), comment: null },
+    { operation: "receipt", quantity: 5, document_date: null, comment: null },
   ]);
   await waitFor(() => expect(card.loads()).toBeGreaterThan(1));
+});
+
+test("приход: изменённая дата документа отправляется", async () => {
+  mockSignedIn();
+  mockStockLookups();
+  mockCard();
+  const bodies = mockOperation(() => HttpResponse.json(makeStockItem({ quantity: 13 })));
+  const { user } = renderApp("/equipment/stock/200");
+
+  const dialog = await openOperation(user, "Приход");
+  await user.clear(within(dialog).getByLabelText("Дата документа"));
+  await user.type(within(dialog).getByLabelText("Дата документа"), "2026-09-01");
+  await user.type(within(dialog).getByLabelText("Количество, шт"), "1");
+  await user.click(within(dialog).getByRole("button", { name: "Приход" }));
+
+  await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+  expect(bodies).toEqual([
+    { operation: "receipt", quantity: 1, document_date: "2026-09-01", comment: null },
+  ]);
 });
 
 test("списание: причина обязательна, количество не больше остатка", async () => {
@@ -243,6 +262,6 @@ test("приход со страницы списка: позиция выбир
 
   await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
   expect(bodies).toEqual([
-    { operation: "receipt", quantity: 8, document_date: localDateIso(), comment: null },
+    { operation: "receipt", quantity: 8, document_date: null, comment: null },
   ]);
 });

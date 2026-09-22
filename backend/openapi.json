@@ -6055,6 +6055,16 @@
           },
           {
             "in": "query",
+            "name": "in_stock",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "In Stock",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
             "name": "include_inactive",
             "required": false,
             "schema": {

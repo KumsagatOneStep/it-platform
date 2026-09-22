@@ -46,12 +46,25 @@ const FIELDS = [
 const required = { required: "Обязательное поле" };
 const INTEGER = /^\d{1,7}$/;
 
-function buildBody(operation: StockOperation, values: OperationFormValues): StockOperationBody {
+/**
+ * dateChanged: дату документа меняли вручную. Иначе отправляется null — «сегодня» подставляет
+ * сервер по часовому поясу компании (дата браузера около полуночи может с ней не совпасть).
+ */
+function buildBody(
+  operation: StockOperation,
+  values: OperationFormValues,
+  dateChanged: boolean,
+): StockOperationBody {
   const comment = values.comment.trim() || null;
   const quantity = Number(values.quantity);
   switch (operation) {
     case "receipt":
-      return { operation, quantity, document_date: values.document_date || null, comment };
+      return {
+        operation,
+        quantity,
+        document_date: dateChanged ? values.document_date || null : null,
+        comment,
+      };
     case "write_off":
       return { operation, quantity, reason_id: values.reason_id, comment };
     case "adjustment":
@@ -79,7 +92,7 @@ export function StockOperationDialog({ item, operation, onClose }: StockOperatio
     handleSubmit,
     setError,
     watch,
-    formState: { isSubmitting },
+    formState: { isSubmitting, dirtyFields },
   } = useForm<OperationFormValues>({
     defaultValues: {
       item,
@@ -100,7 +113,10 @@ export function StockOperationDialog({ item, operation, onClose }: StockOperatio
   const onSubmit = handleSubmit(async (values) => {
     setFormError(null);
     try {
-      await mutation.mutateAsync({ id: values.item!.id, body: buildBody(operation, values) });
+      await mutation.mutateAsync({
+        id: values.item!.id,
+        body: buildBody(operation, values, Boolean(dirtyFields.document_date)),
+      });
       enqueueSnackbar(`${label}: готово`, { variant: "success" });
       onClose();
     } catch (error) {
@@ -186,7 +202,8 @@ export function StockOperationDialog({ item, operation, onClose }: StockOperatio
           label="Дата документа"
           type="date"
           rules={required}
-          slotProps={{ inputLabel: { shrink: true }, htmlInput: { max: localDateIso() } }}
+          helperText="Будущая дата не принимается"
+          slotProps={{ inputLabel: { shrink: true } }}
         />
       )}
       {operation === "write_off" && (

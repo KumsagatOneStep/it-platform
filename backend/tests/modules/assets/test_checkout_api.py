@@ -137,9 +137,27 @@ async def test_checkout_is_all_or_nothing_and_lists_every_problem(
             {"asset_id": 999999, "inventory_number": None, "status": None},
         ],
         "stock": [
-            {"stock_item_id": short.id, "name": "Бумага A4", "requested": 3, "available": 1},
-            {"stock_item_id": inactive.id, "name": "Старый тонер", "requested": 1, "available": 0},
-            {"stock_item_id": 999999, "name": None, "requested": 1, "available": None},
+            {
+                "stock_item_id": short.id,
+                "name": "Бумага A4",
+                "requested": 3,
+                "available": 1,
+                "is_active": True,
+            },
+            {
+                "stock_item_id": inactive.id,
+                "name": "Старый тонер",
+                "requested": 1,
+                "available": 0,
+                "is_active": False,
+            },
+            {
+                "stock_item_id": 999999,
+                "name": None,
+                "requested": 1,
+                "available": None,
+                "is_active": None,
+            },
         ],
     }
     await db_session.refresh(free)

@@ -119,8 +119,13 @@ async def lock_assets(session: AsyncSession, asset_ids: list[int]) -> dict[int, 
     """Блокирует активы в порядке id (без взаимных блокировок); отсутствующих в ответе нет."""
     # Без фильтра видимости: массовые операции доступны только Admin;
     # добавить visibility_filter, если это когда-нибудь откроют другим ролям.
+    # populate_existing: перечитать статус под блокировкой, даже если актив уже в сессии.
     rows = await session.scalars(
-        select(Asset).where(Asset.id.in_(set(asset_ids))).order_by(Asset.id).with_for_update()
+        select(Asset)
+        .where(Asset.id.in_(set(asset_ids)))
+        .order_by(Asset.id)
+        .with_for_update()
+        .execution_options(populate_existing=True)
     )
     return {asset.id: asset for asset in rows}
 

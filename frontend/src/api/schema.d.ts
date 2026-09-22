@@ -3653,6 +3653,7 @@ export interface operations {
                 location_id?: number | null;
                 q?: string | null;
                 low_stock?: boolean;
+                in_stock?: boolean;
                 include_inactive?: boolean;
                 limit?: number;
                 offset?: number;

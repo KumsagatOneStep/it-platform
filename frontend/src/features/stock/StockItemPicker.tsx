@@ -34,13 +34,11 @@ export function StockItemPicker({
   const [input, setInput] = useState("");
   const query = useDebouncedValue(input);
   const options = useQuery({
-    queryKey: [...queryKeys.stock, "picker-options", query],
-    queryFn: () => fetchStockItems({ q: query, limit: 50, offset: 0 }),
+    queryKey: [...queryKeys.stock, "picker-options", { query, onlyAvailable }],
+    queryFn: () => fetchStockItems({ q: query, inStock: onlyAvailable, limit: 50, offset: 0 }),
     enabled: open,
   });
-  const items = (options.data?.items ?? []).filter(
-    (item) => (!onlyAvailable || item.quantity > 0) && !excludeIds?.has(item.id),
-  );
+  const items = (options.data?.items ?? []).filter((item) => !excludeIds?.has(item.id));
 
   return (
     <Autocomplete<StockItem>

@@ -25,6 +25,8 @@ class StockItemFilters:
     location_id: int | None = None
     q: str | None = None
     low_stock: bool = False
+    in_stock: bool = False
+    """Только позиции с остатком > 0 (выбор для выдачи)."""
     include_inactive: bool = False
 
 
@@ -90,6 +92,8 @@ async def list_stock_items(
         stmt = stmt.where(StockItem.location_id == filters.location_id)
     if filters.low_stock:
         stmt = stmt.where(StockItem.min_quantity > 0, StockItem.quantity <= StockItem.min_quantity)
+    if filters.in_stock:
+        stmt = stmt.where(StockItem.quantity > 0)
     if filters.q and filters.q.strip():
         stmt = stmt.where(StockItem.name.ilike(f"%{filters.q.strip()}%"))
     total = await session.scalar(select(func.count()).select_from(stmt.subquery())) or 0

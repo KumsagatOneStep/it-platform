@@ -222,6 +222,13 @@ async def _transfer(
     source, target = locked[source.id], locked[target_id]
     require_active(source)
     require_available(source, request.quantity)
+    if target.unit != source.unit:
+        # Иначе количество в одних единицах тихо прибавится к остатку в других.
+        raise ConflictError(
+            "На складе-получателе позиция учитывается в других единицах",
+            code="stock_unit_mismatch",
+            details={"source_unit": source.unit, "target_unit": target.unit},
+        )
     if not target.is_active:
         target.is_active = True
         target.version += 1

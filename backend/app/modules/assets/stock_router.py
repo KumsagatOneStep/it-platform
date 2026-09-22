@@ -33,6 +33,7 @@ async def list_stock_items(
     location_id: int | None = None,
     q: Annotated[str | None, Query(max_length=100)] = None,
     low_stock: bool = False,
+    in_stock: bool = False,
     include_inactive: bool = False,
 ) -> Page[StockItemRead]:
     filters = stock_registry.StockItemFilters(
@@ -40,6 +41,7 @@ async def list_stock_items(
         location_id=location_id,
         q=q,
         low_stock=low_stock,
+        in_stock=in_stock,
         include_inactive=include_inactive,
     )
     items, total = await stock_registry.list_stock_items(

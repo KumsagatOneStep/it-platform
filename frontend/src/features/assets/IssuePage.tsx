@@ -12,7 +12,12 @@ import { useSnackbar } from "notistack";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 
-import { StockLinesField, stockLineError, type StockLineValue } from "../stock";
+import {
+  StockLinesField,
+  stockLineError,
+  type StockLineValue,
+  type UnavailableLine,
+} from "../stock";
 import { ApiError, UNKNOWN_ERROR_MESSAGE } from "../../api/errors";
 import { applyApiErrors, fieldByCode } from "../../shared/lib/applyApiErrors";
 import {
@@ -45,13 +50,13 @@ const BULK_LIMIT_MESSAGE = `Не больше ${MAX_BULK_SELECTION} единиц
 /** details ошибки checkout_unavailable (backend: CheckoutUnavailable). */
 interface CheckoutUnavailable {
   assets: { asset_id: number }[];
-  stock: { stock_item_id: number; available: number | null }[];
+  stock: { stock_item_id: number; available: number | null; is_active: boolean | null }[];
 }
 
 interface Unavailable {
   assets: ReadonlySet<number>;
-  /** id позиции → остаток на сервере (null — позиция не найдена). */
-  stock: ReadonlyMap<number, number | null>;
+  /** id позиции → остаток на сервере и активность. */
+  stock: ReadonlyMap<number, UnavailableLine>;
 }
 
 const NOTHING_UNAVAILABLE: Unavailable = { assets: new Set(), stock: new Map() };
@@ -61,7 +66,12 @@ function unavailableOf(error: ApiError): Unavailable {
   const details = error.details as CheckoutUnavailable | null;
   return {
     assets: new Set((details?.assets ?? []).map((item) => item.asset_id)),
-    stock: new Map((details?.stock ?? []).map((line) => [line.stock_item_id, line.available])),
+    stock: new Map(
+      (details?.stock ?? []).map((line) => [
+        line.stock_item_id,
+        { available: line.available, isActive: line.is_active },
+      ]),
+    ),
   };
 }
 
@@ -224,19 +234,26 @@ function IssueSection() {
                 lines.every((line) => stockLineError(line) === null) ||
                 "Проверьте строки расходников",
             }}
-            render={({ field }) => (
-              <StockLinesField
-                value={field.value}
-                onChange={(next) => {
-                  field.onChange(next);
-                  dropUnfitReason(getValues("asset_ids"), next);
-                  setUnavailable(NOTHING_UNAVAILABLE);
-                  setFormError(null);
-                }}
-                unavailable={unavailable.stock}
-                showErrors={submitCount > 0}
-                maxLines={MAX_BULK_SELECTION}
-              />
+            render={({ field, fieldState }) => (
+              <Stack spacing={1}>
+                <StockLinesField
+                  value={field.value}
+                  onChange={(next) => {
+                    field.onChange(next);
+                    dropUnfitReason(getValues("asset_ids"), next);
+                    setUnavailable(NOTHING_UNAVAILABLE);
+                    setFormError(null);
+                  }}
+                  unavailable={unavailable.stock}
+                  showErrors={submitCount > 0}
+                  maxLines={MAX_BULK_SELECTION}
+                />
+                {fieldState.error && (
+                  <Typography variant="body2" color="error">
+                    {fieldState.error.message}
+                  </Typography>
+                )}
+              </Stack>
             )}
           />
           <FormSelect

@@ -251,6 +251,19 @@ async def test_journal_filters(
     assert receipt_entry["document_date"] == "2026-09-20"
 
 
+async def test_journal_rejects_reversed_period(
+    client: AsyncClient, admin_headers: dict[str, str]
+) -> None:
+    response = await client.get(
+        "/api/equipment/movements",
+        headers=admin_headers,
+        params={"date_from": "2026-09-22", "date_to": "2026-09-21"},
+    )
+
+    assert response.status_code == 422
+    assert response.json()["error"]["code"] == "date_range_invalid"
+
+
 @pytest.mark.parametrize("role", [UserRole.EMPLOYEE, UserRole.MANAGER])
 async def test_journal_admin_only(
     client: AsyncClient, db_session: AsyncSession, role: UserRole

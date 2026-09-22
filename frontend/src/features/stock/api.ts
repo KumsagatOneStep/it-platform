@@ -9,6 +9,8 @@ export interface StockListParams {
   categoryId?: number | null;
   locationId?: number | null;
   lowStock?: boolean;
+  /** Только позиции с остатком > 0. */
+  inStock?: boolean;
   includeInactive?: boolean;
   limit: number;
   offset: number;
@@ -23,6 +25,7 @@ export function fetchStockItems(params: StockListParams) {
           category_id: params.categoryId ?? undefined,
           location_id: params.locationId ?? undefined,
           low_stock: params.lowStock || undefined,
+          in_stock: params.inStock || undefined,
           include_inactive: params.includeInactive || undefined,
           limit: params.limit,
           offset: params.offset,

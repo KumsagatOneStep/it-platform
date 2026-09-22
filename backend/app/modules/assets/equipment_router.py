@@ -6,6 +6,7 @@ from typing import Annotated
 from fastapi import APIRouter, Query
 
 from app.core.db import SessionDep
+from app.core.errors import ValidationFailedError
 from app.core.schemas import Page, PaginationDep
 from app.modules.assets import checkout as checkout_service
 from app.modules.assets import journal
@@ -44,6 +45,8 @@ async def list_movements(
     performed_by: int | None = None,
     location_id: int | None = None,
 ) -> Page[JournalEntryRead]:
+    if date_from is not None and date_to is not None and date_from > date_to:
+        raise ValidationFailedError("Начало периода позже его конца", code="date_range_invalid")
     filters = journal.JournalFilters(
         date_from=date_from,
         date_to=date_to,

@@ -25,6 +25,12 @@ export function stockLineError(line: StockLineValue): string | null {
 
 let nextKey = 1;
 
+/** Строка, отклонённая ответом 409: остаток на сервере и активна ли позиция (null — не найдена). */
+export interface UnavailableLine {
+  available: number | null;
+  isActive: boolean | null;
+}
+
 export function newStockLine(): StockLineValue {
   return { key: nextKey++, item: null, quantity: "" };
 }
@@ -32,8 +38,8 @@ export function newStockLine(): StockLineValue {
 interface StockLinesFieldProps {
   value: StockLineValue[];
   onChange: (lines: StockLineValue[]) => void;
-  /** Остаток на сервере для строк, отклонённых ответом 409 (null — позиция не найдена). */
-  unavailable: ReadonlyMap<number, number | null>;
+  /** Строки, отклонённые ответом 409, по id позиции. */
+  unavailable: ReadonlyMap<number, UnavailableLine>;
   /** Показывать ошибки строк (после попытки отправки). */
   showErrors: boolean;
   maxLines: number;
@@ -51,11 +57,11 @@ export function StockLinesField({
     onChange(value.map((line) => (line.key === key ? { ...line, ...patch } : line)));
 
   const serverHint = (line: StockLineValue) => {
-    if (!line.item || !unavailable.has(line.item.id)) return null;
-    const available = unavailable.get(line.item.id);
-    return available === null || available === undefined
-      ? "Позиция недоступна"
-      : `На складе осталось ${available} ${line.item.unit}`;
+    const problem = line.item ? unavailable.get(line.item.id) : undefined;
+    if (!line.item || !problem) return null;
+    if (problem.isActive === null || problem.available === null) return "Позиция не найдена";
+    if (!problem.isActive) return "Позиция деактивирована";
+    return `На складе осталось ${problem.available} ${line.item.unit}`;
   };
 
   return (

@@ -6,14 +6,17 @@ import { makeMe, mockSignedIn } from "../../test/auth";
 import { makeJournalEntry, makeUser, page } from "../../test/fixtures";
 import { server } from "../../test/server";
 
+const usersRequests: URL[] = [];
+
 function mockJournal(seen: URL[] = []) {
   server.use(
     http.get("*/api/directories/locations", () =>
       HttpResponse.json([{ id: 5, name: "Склад", description: null, is_active: true }]),
     ),
-    http.get("*/api/admin/users", () =>
-      HttpResponse.json(page([makeUser({ id: 10, full_name: "Петров Пётр" })])),
-    ),
+    http.get("*/api/admin/users", ({ request }) => {
+      usersRequests.push(new URL(request.url));
+      return HttpResponse.json(page([makeUser({ id: 10, full_name: "Петров Пётр" })]));
+    }),
     http.get("*/api/equipment/movements", ({ request }) => {
       seen.push(new URL(request.url));
       return HttpResponse.json(
@@ -72,6 +75,12 @@ test("журнал: техника и расходники, ссылки на к
   await user.click(await screen.findByRole("option", { name: "Списание" }));
   await waitFor(() => expect(seen.at(-1)!.searchParams.getAll("group")).toEqual(["write_off"]));
   expect(router.state.location.search).toContain("group=write_off");
+
+  await user.click(screen.getByLabelText("Кто выполнил"));
+  await screen.findByRole("option", { name: "Петров Пётр" });
+  // Фильтр по людям находит и деактивированных: история уволенного сотрудника сохраняется.
+  expect(usersRequests.some((url) => url.searchParams.has("is_active"))).toBe(false);
+  await user.keyboard("{Escape}");
 
   await user.click(assetLink);
   expect(router.state.location.pathname).toBe("/equipment/assets/100");
