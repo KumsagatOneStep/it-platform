@@ -344,6 +344,52 @@
         "title": "AssetEventType",
         "type": "string"
       },
+      "AssetIssueRequest": {
+        "properties": {
+          "asset_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "maxItems": 50,
+            "minItems": 1,
+            "title": "Asset Ids",
+            "type": "array"
+          },
+          "comment": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Comment"
+          },
+          "owner_id": {
+            "title": "Owner Id",
+            "type": "integer"
+          },
+          "reason_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason Id"
+          }
+        },
+        "required": [
+          "owner_id",
+          "asset_ids"
+        ],
+        "title": "AssetIssueRequest",
+        "type": "object"
+      },
       "AssetRead": {
         "properties": {
           "accepted_at": {
@@ -500,6 +546,47 @@
           "allowed_operations"
         ],
         "title": "AssetRead",
+        "type": "object"
+      },
+      "AssetReturnRequest": {
+        "properties": {
+          "asset_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "maxItems": 50,
+            "minItems": 1,
+            "title": "Asset Ids",
+            "type": "array"
+          },
+          "comment": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Comment"
+          },
+          "location_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location Id"
+          }
+        },
+        "required": [
+          "asset_ids"
+        ],
+        "title": "AssetReturnRequest",
         "type": "object"
       },
       "AssetStatus": {
@@ -848,6 +935,48 @@
         "title": "ErrorResponse",
         "type": "object"
       },
+      "IssueOperation": {
+        "properties": {
+          "comment": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Comment"
+          },
+          "operation": {
+            "const": "issue",
+            "title": "Operation",
+            "type": "string"
+          },
+          "owner_id": {
+            "title": "Owner Id",
+            "type": "integer"
+          },
+          "reason_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason Id"
+          }
+        },
+        "required": [
+          "operation",
+          "owner_id"
+        ],
+        "title": "IssueOperation",
+        "type": "object"
+      },
       "IssueReasonApplicability": {
         "enum": [
           "assets",
@@ -1113,6 +1242,37 @@
         "title": "MeRead",
         "type": "object"
       },
+      "MoveOperation": {
+        "properties": {
+          "comment": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Comment"
+          },
+          "location_id": {
+            "title": "Location Id",
+            "type": "integer"
+          },
+          "operation": {
+            "const": "move",
+            "title": "Operation",
+            "type": "string"
+          }
+        },
+        "required": [
+          "operation",
+          "location_id"
+        ],
+        "title": "MoveOperation",
+        "type": "object"
+      },
       "Operation": {
         "enum": [
           "issue",
@@ -1219,6 +1379,79 @@
           "offset"
         ],
         "title": "Page[UserRead]",
+        "type": "object"
+      },
+      "ReturnOperation": {
+        "description": "Возврат на склад: из работы или из ремонта.",
+        "properties": {
+          "comment": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Comment"
+          },
+          "location_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location Id"
+          },
+          "operation": {
+            "enum": [
+              "return",
+              "repair_to_stock"
+            ],
+            "title": "Operation",
+            "type": "string"
+          }
+        },
+        "required": [
+          "operation"
+        ],
+        "title": "ReturnOperation",
+        "type": "object"
+      },
+      "StatusOperation": {
+        "description": "Операции без дополнительных полей.",
+        "properties": {
+          "comment": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Comment"
+          },
+          "operation": {
+            "enum": [
+              "reserve",
+              "unreserve",
+              "to_repair",
+              "repair_to_owner"
+            ],
+            "title": "Operation",
+            "type": "string"
+          }
+        },
+        "required": [
+          "operation"
+        ],
+        "title": "StatusOperation",
         "type": "object"
       },
       "StockCategoryCreate": {
@@ -1623,6 +1856,43 @@
           }
         },
         "title": "UserUpdate",
+        "type": "object"
+      },
+      "WriteOffOperation": {
+        "properties": {
+          "comment": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Comment"
+          },
+          "operation": {
+            "const": "write_off",
+            "title": "Operation",
+            "type": "string"
+          },
+          "reason_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason Id"
+          }
+        },
+        "required": [
+          "operation"
+        ],
+        "title": "WriteOffOperation",
         "type": "object"
       }
     },
@@ -3355,6 +3625,146 @@
         ]
       }
     },
+    "/api/assets/issue": {
+      "post": {
+        "operationId": "issue_assets_api_assets_issue_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssetIssueRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AssetRead"
+                  },
+                  "title": "Response Issue Assets Api Assets Issue Post",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Некорректные данные запроса"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Ошибка запроса"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Внутренняя ошибка сервера"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Issue Assets",
+        "tags": [
+          "assets"
+        ]
+      }
+    },
+    "/api/assets/return": {
+      "post": {
+        "operationId": "return_assets_api_assets_return_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssetReturnRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AssetRead"
+                  },
+                  "title": "Response Return Assets Api Assets Return Post",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Некорректные данные запроса"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Ошибка запроса"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Внутренняя ошибка сервера"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Return Assets",
+        "tags": [
+          "assets"
+        ]
+      }
+    },
     "/api/assets/{asset_id}": {
       "get": {
         "operationId": "get_asset_api_assets__asset_id__get",
@@ -3582,6 +3992,100 @@
           }
         ],
         "summary": "List Asset Events",
+        "tags": [
+          "assets"
+        ]
+      }
+    },
+    "/api/assets/{asset_id}/operations": {
+      "post": {
+        "operationId": "apply_operation_api_assets__asset_id__operations_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "asset_id",
+            "required": true,
+            "schema": {
+              "title": "Asset Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/IssueOperation"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ReturnOperation"
+                  },
+                  {
+                    "$ref": "#/components/schemas/StatusOperation"
+                  },
+                  {
+                    "$ref": "#/components/schemas/WriteOffOperation"
+                  },
+                  {
+                    "$ref": "#/components/schemas/MoveOperation"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssetRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Некорректные данные запроса"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Ошибка запроса"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Внутренняя ошибка сервера"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Apply Operation",
         "tags": [
           "assets"
         ]
