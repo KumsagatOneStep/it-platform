@@ -3,7 +3,7 @@ import { http, HttpResponse } from "msw";
 
 import { renderApp } from "../../test/app";
 import { makeMe, mockSignedIn } from "../../test/auth";
-import { makeAsset, page } from "../../test/fixtures";
+import { makeAsset, makeStockItem, page } from "../../test/fixtures";
 import { errorBody } from "../../test/http";
 import { server } from "../../test/server";
 import { mockAssetLookups } from "./testing";
@@ -53,7 +53,7 @@ test("выдача: при 409 недоступная техника подсв�
   await user.click(await screen.findByRole("option", { name: "INV-002 — Dell Latitude" }));
   await user.click(within(section).getByRole("button", { name: "Выдать" }));
 
-  expect(await within(section).findByText(/выделена красным/)).toBeInTheDocument();
+  expect(await within(section).findByText(/выделены красным/)).toBeInTheDocument();
   expect(body).toEqual({
     recipient_id: 10,
     asset_ids: [100, 101],
@@ -88,6 +88,129 @@ test("выдача: 422 recipient_invalid показывает ошибку у �
   expect(within(section).queryByRole("alert")).not.toBeInTheDocument();
 });
 
+function mockStockOptions() {
+  server.use(
+    http.get("*/api/stock-items", () =>
+      HttpResponse.json(
+        page([
+          makeStockItem(),
+          makeStockItem({ id: 201, name: "Бумага A4", unit: "пачка", quantity: 0 }),
+        ]),
+      ),
+    ),
+  );
+}
+
+async function addStockLine(
+  user: ReturnType<typeof renderApp>["user"],
+  section: HTMLElement,
+  quantity: string,
+) {
+  await user.click(within(section).getByRole("button", { name: "Добавить расходник" }));
+  const pickers = within(section).getAllByLabelText("Расходник");
+  await user.click(pickers.at(-1)!);
+  await user.click(
+    await screen.findByRole("option", { name: "Картридж HP 85A · Склад · остаток 12 шт" }),
+  );
+  const quantities = within(section).getAllByLabelText("Количество");
+  await user.type(quantities.at(-1)!, quantity);
+}
+
+test("выдача техники и расходников одной отправкой; причины — только общие", async () => {
+  mockSignedIn();
+  mockAssetLookups();
+  mockStockOptions();
+  let body: unknown = null;
+  server.use(
+    http.get("*/api/assets", () => HttpResponse.json(page(FREE))),
+    http.post("*/api/equipment/checkout", async ({ request }) => {
+      body = await request.json();
+      return HttpResponse.json({
+        assets: [makeAsset({ id: 100, status: "in_use" })],
+        stock_items: [makeStockItem({ quantity: 10 })],
+      });
+    }),
+  );
+  const { user } = renderApp("/equipment/issue");
+
+  const section = await screen.findByRole("region", { name: "Выдать" });
+  await pickEmployee(user, section, "Кому");
+  await user.click(within(section).getByLabelText("Техника"));
+  await user.click(await screen.findByRole("option", { name: "INV-001 — Lenovo ThinkPad T14" }));
+  await addStockLine(user, section, "2");
+  await user.click(within(section).getByLabelText("Причина"));
+  const reasons = (await screen.findAllByRole("option")).map((option) => option.textContent);
+  expect(reasons).toEqual(["Не указана", "Новый сотрудник"]);
+  await user.click(screen.getByRole("option", { name: "Новый сотрудник" }));
+  await user.click(within(section).getByRole("button", { name: "Выдать" }));
+
+  expect(await screen.findByText("Выдано позиций: 2")).toBeInTheDocument();
+  expect(body).toEqual({
+    recipient_id: 10,
+    asset_ids: [100],
+    stock_lines: [{ stock_item_id: 200, quantity: 2 }],
+    reason_id: 7,
+    comment: null,
+  });
+});
+
+test("расходники: количество больше остатка не отправляется, позиции без остатка не предлагаются", async () => {
+  mockSignedIn();
+  mockAssetLookups();
+  mockStockOptions();
+  let posted = false;
+  server.use(
+    http.post("*/api/equipment/checkout", () => {
+      posted = true;
+      return HttpResponse.json({ assets: [], stock_items: [] });
+    }),
+  );
+  const { user } = renderApp("/equipment/issue");
+
+  const section = await screen.findByRole("region", { name: "Выдать" });
+  await pickEmployee(user, section, "Кому");
+  await user.click(within(section).getByRole("button", { name: "Добавить расходник" }));
+  await user.click(within(section).getByLabelText("Расходник"));
+  expect(await screen.findByRole("option", { name: /Картридж HP 85A/ })).toBeInTheDocument();
+  expect(screen.queryByRole("option", { name: /Бумага A4/ })).not.toBeInTheDocument();
+  await user.click(screen.getByRole("option", { name: /Картридж HP 85A/ }));
+  await user.type(within(section).getByLabelText("Количество"), "13");
+  await user.click(within(section).getByRole("button", { name: "Выдать" }));
+
+  expect(await within(section).findByText("Доступно 12 шт")).toBeInTheDocument();
+  expect(posted).toBe(false);
+});
+
+test("расходники: при 409 у строки показывается остаток на сервере", async () => {
+  mockSignedIn();
+  mockAssetLookups();
+  mockStockOptions();
+  server.use(
+    http.post("*/api/equipment/checkout", () =>
+      HttpResponse.json(
+        errorBody("checkout_unavailable", "Часть недоступна", {
+          assets: [],
+          stock: [{ stock_item_id: 200, name: "Картридж HP 85A", requested: 5, available: 1 }],
+        }),
+        { status: 409 },
+      ),
+    ),
+  );
+  const { user } = renderApp("/equipment/issue");
+
+  const section = await screen.findByRole("region", { name: "Выдать" });
+  await pickEmployee(user, section, "Кому");
+  await addStockLine(user, section, "5");
+  await user.click(within(section).getByLabelText("Причина"));
+  const reasons = (await screen.findAllByRole("option")).map((option) => option.textContent);
+  expect(reasons).toEqual(["Не указана", "Новый сотрудник", "Заправка"]);
+  await user.keyboard("{Escape}");
+  await user.click(within(section).getByRole("button", { name: "Выдать" }));
+
+  expect(await within(section).findByText(/выделены красным/)).toBeInTheDocument();
+  expect(within(section).getByText("На складе осталось 1 шт")).toBeInTheDocument();
+});
+
 test("выдача без сотрудника и техники подсказывает поля и не отправляет запрос", async () => {
   mockSignedIn();
   mockAssetLookups();
@@ -97,7 +220,7 @@ test("выдача без сотрудника и техники подсказ�
   await user.click(within(section).getByRole("button", { name: "Выдать" }));
 
   expect(within(section).getByText("Выберите сотрудника")).toBeInTheDocument();
-  expect(within(section).getByText("Выберите технику")).toBeInTheDocument();
+  expect(within(section).getByText("Выберите технику или расходники")).toBeInTheDocument();
 });
 
 test("приём: техника сотрудника в работе, отмеченное уходит на склад", async () => {
