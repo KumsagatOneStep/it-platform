@@ -9,7 +9,7 @@ import {
   RequireRole,
   useAuth,
 } from "../features/auth";
-import { AssetsPage } from "../features/assets";
+import { AssetPage, AssetsPage } from "../features/assets";
 import { DepartmentsPage } from "../features/departments";
 import { DirectoriesPage } from "../features/directories";
 import { HomePage } from "../features/home";
@@ -49,6 +49,7 @@ export const routes: RouteObject[] = [
           { path: "/profile", element: <ProfilePage /> },
           { path: "/equipment", element: <Navigate to="/equipment/assets" replace /> },
           { path: "/equipment/assets", element: <AssetsPage /> },
+          { path: "/equipment/assets/:id", element: <AssetPage /> },
           {
             element: <RequireRole role="admin" />,
             children: [
