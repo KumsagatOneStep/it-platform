@@ -1,5 +1,11 @@
 import { MenuItem, TextField } from "@mui/material";
-import { Controller, type Control, type FieldPath, type FieldValues } from "react-hook-form";
+import {
+  Controller,
+  type Control,
+  type FieldPath,
+  type FieldValues,
+  type RegisterOptions,
+} from "react-hook-form";
 
 export interface SelectOption<V extends string | number> {
   value: V;
@@ -14,6 +20,7 @@ interface FormSelectProps<T extends FieldValues, V extends string | number> {
   /** Подпись пустого значения; если задана, поле допускает null. */
   emptyLabel?: string;
   disabled?: boolean;
+  rules?: RegisterOptions<T, FieldPath<T>>;
 }
 
 export function FormSelect<T extends FieldValues, V extends string | number>({
@@ -23,11 +30,13 @@ export function FormSelect<T extends FieldValues, V extends string | number>({
   options,
   emptyLabel,
   disabled,
+  rules,
 }: FormSelectProps<T, V>) {
   return (
     <Controller
       control={control}
       name={name}
+      rules={rules}
       render={({ field, fieldState }) => (
         <TextField
           select

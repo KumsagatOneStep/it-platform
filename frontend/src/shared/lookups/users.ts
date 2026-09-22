@@ -39,3 +39,15 @@ export async function searchResponsibleOptions(query: string): Promise<EntityOpt
     .filter((user) => user.role !== "employee")
     .map((user) => ({ id: user.id, label: user.full_name }));
 }
+
+/** Варианты активных сотрудников любой роли (для выдачи техники; только администратор). */
+export async function searchActiveUserOptions(query: string): Promise<EntityOption[]> {
+  const page = await unwrap(
+    api.GET("/api/admin/users", {
+      params: { query: { q: query.trim() || undefined, is_active: true, limit: 50 } },
+    }),
+  );
+  return page.items.map((user) => ({ id: user.id, label: user.full_name }));
+}
+
+export const ACTIVE_USER_OPTIONS_KEY = [...queryKeys.users, "active-options"] as const;

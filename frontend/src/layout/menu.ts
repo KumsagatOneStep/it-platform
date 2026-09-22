@@ -1,6 +1,8 @@
 import {
+  IconArrowsExchange,
   IconBook2,
   IconBuildingCommunity,
+  IconDeviceLaptop,
   IconLayoutDashboard,
   IconUserCircle,
   IconUsers,
@@ -13,6 +15,7 @@ export interface MenuItem {
   label: string;
   to: string;
   icon: ComponentType<{ size?: string | number; stroke?: string | number }>;
+  roles?: readonly UserRole[];
 }
 
 export interface MenuSection {
@@ -29,6 +32,18 @@ export const MENU: readonly MenuSection[] = [
     ],
   },
   {
+    title: "Склад и техника",
+    items: [
+      { label: "Реестр техники", to: "/equipment/assets", icon: IconDeviceLaptop },
+      {
+        label: "Выдать / принять",
+        to: "/equipment/issue",
+        icon: IconArrowsExchange,
+        roles: ["admin"],
+      },
+    ],
+  },
+  {
     title: "Администрирование",
     roles: ["admin"],
     items: [
@@ -39,6 +54,12 @@ export const MENU: readonly MenuSection[] = [
   },
 ];
 
+const allowed = (roles: readonly UserRole[] | undefined, role: UserRole) =>
+  !roles || roles.includes(role);
+
 export function menuForRole(role: UserRole): MenuSection[] {
-  return MENU.filter((section) => !section.roles || section.roles.includes(role));
+  return MENU.filter((section) => allowed(section.roles, role)).map((section) => ({
+    ...section,
+    items: section.items.filter((item) => allowed(item.roles, role)),
+  }));
 }
