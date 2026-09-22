@@ -25,6 +25,494 @@
         "title": "AccessTokenResponse",
         "type": "object"
       },
+      "AssetCreate": {
+        "properties": {
+          "accepted_at": {
+            "format": "date",
+            "title": "Accepted At",
+            "type": "string"
+          },
+          "asset_type_id": {
+            "title": "Asset Type Id",
+            "type": "integer"
+          },
+          "initial_cost": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,10}|(?=[\\d.]{1,13}0*$)\\d{0,10}\\.\\d{0,2}0*$)",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Initial Cost"
+          },
+          "inventory_number": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Inventory Number",
+            "type": "string"
+          },
+          "location_id": {
+            "title": "Location Id",
+            "type": "integer"
+          },
+          "model": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Model",
+            "type": "string"
+          },
+          "needs_review": {
+            "default": false,
+            "title": "Needs Review",
+            "type": "boolean"
+          },
+          "purchased_at": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Purchased At"
+          },
+          "serial_number": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Serial Number"
+          },
+          "warranty_until": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Warranty Until"
+          }
+        },
+        "required": [
+          "asset_type_id",
+          "inventory_number",
+          "model",
+          "location_id",
+          "accepted_at"
+        ],
+        "title": "AssetCreate",
+        "type": "object"
+      },
+      "AssetEventRead": {
+        "properties": {
+          "changes": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Changes"
+          },
+          "comment": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Comment"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "event_type": {
+            "$ref": "#/components/schemas/AssetEventType"
+          },
+          "from_location_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "From Location Id"
+          },
+          "from_location_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "From Location Name"
+          },
+          "from_owner_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "From Owner Id"
+          },
+          "from_owner_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "From Owner Name"
+          },
+          "from_status": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AssetStatus"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "operation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Operation"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "performed_by": {
+            "title": "Performed By",
+            "type": "integer"
+          },
+          "performed_by_name": {
+            "title": "Performed By Name",
+            "type": "string"
+          },
+          "reason_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason Id"
+          },
+          "reason_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason Name"
+          },
+          "to_location_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "To Location Id"
+          },
+          "to_location_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "To Location Name"
+          },
+          "to_owner_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "To Owner Id"
+          },
+          "to_owner_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "To Owner Name"
+          },
+          "to_status": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AssetStatus"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "event_type",
+          "operation",
+          "from_owner_id",
+          "from_owner_name",
+          "to_owner_id",
+          "to_owner_name",
+          "from_status",
+          "to_status",
+          "from_location_id",
+          "from_location_name",
+          "to_location_id",
+          "to_location_name",
+          "reason_id",
+          "reason_name",
+          "changes",
+          "comment",
+          "performed_by",
+          "performed_by_name",
+          "created_at"
+        ],
+        "title": "AssetEventRead",
+        "type": "object"
+      },
+      "AssetEventType": {
+        "enum": [
+          "created",
+          "issued",
+          "returned",
+          "status_changed",
+          "moved",
+          "edited",
+          "written_off"
+        ],
+        "title": "AssetEventType",
+        "type": "string"
+      },
+      "AssetRead": {
+        "properties": {
+          "accepted_at": {
+            "format": "date",
+            "title": "Accepted At",
+            "type": "string"
+          },
+          "allowed_operations": {
+            "items": {
+              "$ref": "#/components/schemas/Operation"
+            },
+            "title": "Allowed Operations",
+            "type": "array"
+          },
+          "asset_type_id": {
+            "title": "Asset Type Id",
+            "type": "integer"
+          },
+          "asset_type_name": {
+            "title": "Asset Type Name",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "initial_cost": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Initial Cost"
+          },
+          "inventory_number": {
+            "title": "Inventory Number",
+            "type": "string"
+          },
+          "location_id": {
+            "title": "Location Id",
+            "type": "integer"
+          },
+          "location_name": {
+            "title": "Location Name",
+            "type": "string"
+          },
+          "model": {
+            "title": "Model",
+            "type": "string"
+          },
+          "needs_review": {
+            "title": "Needs Review",
+            "type": "boolean"
+          },
+          "owner_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Id"
+          },
+          "owner_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner Name"
+          },
+          "purchased_at": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Purchased At"
+          },
+          "serial_number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Serial Number"
+          },
+          "status": {
+            "$ref": "#/components/schemas/AssetStatus"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          },
+          "warranty_until": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Warranty Until"
+          }
+        },
+        "required": [
+          "id",
+          "asset_type_id",
+          "asset_type_name",
+          "inventory_number",
+          "serial_number",
+          "model",
+          "status",
+          "location_id",
+          "location_name",
+          "owner_id",
+          "owner_name",
+          "accepted_at",
+          "purchased_at",
+          "warranty_until",
+          "initial_cost",
+          "needs_review",
+          "version",
+          "created_at",
+          "updated_at",
+          "allowed_operations"
+        ],
+        "title": "AssetRead",
+        "type": "object"
+      },
+      "AssetStatus": {
+        "enum": [
+          "in_stock",
+          "reserved",
+          "in_use",
+          "in_repair",
+          "written_off"
+        ],
+        "title": "AssetStatus",
+        "type": "string"
+      },
       "AssetTypeCreate": {
         "properties": {
           "name": {
@@ -91,6 +579,131 @@
           }
         },
         "title": "AssetTypeUpdate",
+        "type": "object"
+      },
+      "AssetUpdate": {
+        "properties": {
+          "accepted_at": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Accepted At"
+          },
+          "asset_type_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Asset Type Id"
+          },
+          "initial_cost": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,10}|(?=[\\d.]{1,13}0*$)\\d{0,10}\\.\\d{0,2}0*$)",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Initial Cost"
+          },
+          "inventory_number": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Inventory Number"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          },
+          "needs_review": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Needs Review"
+          },
+          "purchased_at": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Purchased At"
+          },
+          "serial_number": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Serial Number"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          },
+          "warranty_until": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Warranty Until"
+          }
+        },
+        "required": [
+          "version"
+        ],
+        "title": "AssetUpdate",
         "type": "object"
       },
       "ChangePasswordRequest": {
@@ -498,6 +1111,83 @@
           "must_change_password"
         ],
         "title": "MeRead",
+        "type": "object"
+      },
+      "Operation": {
+        "enum": [
+          "issue",
+          "return",
+          "reserve",
+          "unreserve",
+          "to_repair",
+          "repair_to_owner",
+          "repair_to_stock",
+          "write_off",
+          "move"
+        ],
+        "title": "Operation",
+        "type": "string"
+      },
+      "Page_AssetEventRead_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AssetEventRead"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "limit": {
+            "title": "Limit",
+            "type": "integer"
+          },
+          "offset": {
+            "title": "Offset",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "Page[AssetEventRead]",
+        "type": "object"
+      },
+      "Page_AssetRead_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AssetRead"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "limit": {
+            "title": "Limit",
+            "type": "integer"
+          },
+          "offset": {
+            "title": "Offset",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "Page[AssetRead]",
         "type": "object"
       },
       "Page_UserRead_": {
@@ -2417,6 +3107,483 @@
         "summary": "Unlock Login",
         "tags": [
           "admin: users"
+        ]
+      }
+    },
+    "/api/assets": {
+      "get": {
+        "operationId": "list_assets_api_assets_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "$ref": "#/components/schemas/AssetStatus"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "in": "query",
+            "name": "asset_type_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Asset Type Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "owner_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Owner Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "location_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Location Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "needs_review",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Needs Review"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 100,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_AssetRead_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Некорректные данные запроса"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Ошибка запроса"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Внутренняя ошибка сервера"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Assets",
+        "tags": [
+          "assets"
+        ]
+      },
+      "post": {
+        "operationId": "create_asset_api_assets_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssetCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssetRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Некорректные данные запроса"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Ошибка запроса"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Внутренняя ошибка сервера"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Create Asset",
+        "tags": [
+          "assets"
+        ]
+      }
+    },
+    "/api/assets/{asset_id}": {
+      "get": {
+        "operationId": "get_asset_api_assets__asset_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "asset_id",
+            "required": true,
+            "schema": {
+              "title": "Asset Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssetRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Некорректные данные запроса"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Ошибка запроса"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Внутренняя ошибка сервера"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Asset",
+        "tags": [
+          "assets"
+        ]
+      },
+      "patch": {
+        "operationId": "update_asset_api_assets__asset_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "asset_id",
+            "required": true,
+            "schema": {
+              "title": "Asset Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssetUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssetRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Некорректные данные запроса"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Ошибка запроса"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Внутренняя ошибка сервера"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Update Asset",
+        "tags": [
+          "assets"
+        ]
+      }
+    },
+    "/api/assets/{asset_id}/events": {
+      "get": {
+        "operationId": "list_asset_events_api_assets__asset_id__events_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "asset_id",
+            "required": true,
+            "schema": {
+              "title": "Asset Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_AssetEventRead_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Некорректные данные запроса"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Ошибка запроса"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Внутренняя ошибка сервера"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Asset Events",
+        "tags": [
+          "assets"
         ]
       }
     },

@@ -6,6 +6,7 @@ from app.core.errors import ERROR_RESPONSES, register_error_handlers
 from app.core.health import router as health_router
 from app.core.logging import configure_logging
 from app.core.middleware import RequestIdMiddleware
+from app.modules.assets.router import router as assets_router
 from app.modules.directories.router import routers as directories_routers
 from app.modules.users_auth.router import admin_users_router, auth_router, users_router
 from app.wiring import register_event_handlers
@@ -35,7 +36,13 @@ def create_app() -> FastAPI:
         )
     register_error_handlers(app)
     app.include_router(health_router)
-    for router in (auth_router, admin_users_router, users_router, *directories_routers):
+    for router in (
+        auth_router,
+        admin_users_router,
+        users_router,
+        *directories_routers,
+        assets_router,
+    ):
         app.include_router(router, prefix="/api", responses=ERROR_RESPONSES)
     return app
 

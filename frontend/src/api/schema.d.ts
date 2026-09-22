@@ -312,6 +312,59 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/assets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Assets */
+        get: operations["list_assets_api_assets_get"];
+        put?: never;
+        /** Create Asset */
+        post: operations["create_asset_api_assets_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/assets/{asset_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Asset */
+        get: operations["get_asset_api_assets__asset_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Asset */
+        patch: operations["update_asset_api_assets__asset_id__patch"];
+        trace?: never;
+    };
+    "/api/assets/{asset_id}/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Asset Events */
+        get: operations["list_asset_events_api_assets__asset_id__events_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/change-password": {
         parameters: {
             query?: never;
@@ -567,6 +620,140 @@ export interface components {
              */
             token_type: "bearer";
         };
+        /** AssetCreate */
+        AssetCreate: {
+            /**
+             * Accepted At
+             * Format: date
+             */
+            accepted_at: string;
+            /** Asset Type Id */
+            asset_type_id: number;
+            /** Initial Cost */
+            initial_cost?: number | string | null;
+            /** Inventory Number */
+            inventory_number: string;
+            /** Location Id */
+            location_id: number;
+            /** Model */
+            model: string;
+            /**
+             * Needs Review
+             * @default false
+             */
+            needs_review: boolean;
+            /** Purchased At */
+            purchased_at?: string | null;
+            /** Serial Number */
+            serial_number?: string | null;
+            /** Warranty Until */
+            warranty_until?: string | null;
+        };
+        /** AssetEventRead */
+        AssetEventRead: {
+            /** Changes */
+            changes: {
+                [key: string]: unknown;
+            } | null;
+            /** Comment */
+            comment: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            event_type: components["schemas"]["AssetEventType"];
+            /** From Location Id */
+            from_location_id: number | null;
+            /** From Location Name */
+            from_location_name: string | null;
+            /** From Owner Id */
+            from_owner_id: number | null;
+            /** From Owner Name */
+            from_owner_name: string | null;
+            from_status: components["schemas"]["AssetStatus"] | null;
+            /** Id */
+            id: number;
+            operation: components["schemas"]["Operation"] | null;
+            /** Performed By */
+            performed_by: number;
+            /** Performed By Name */
+            performed_by_name: string;
+            /** Reason Id */
+            reason_id: number | null;
+            /** Reason Name */
+            reason_name: string | null;
+            /** To Location Id */
+            to_location_id: number | null;
+            /** To Location Name */
+            to_location_name: string | null;
+            /** To Owner Id */
+            to_owner_id: number | null;
+            /** To Owner Name */
+            to_owner_name: string | null;
+            to_status: components["schemas"]["AssetStatus"] | null;
+        };
+        /**
+         * AssetEventType
+         * @enum {string}
+         */
+        AssetEventType: "created" | "issued" | "returned" | "status_changed" | "moved" | "edited" | "written_off";
+        /** AssetRead */
+        AssetRead: {
+            /**
+             * Accepted At
+             * Format: date
+             */
+            accepted_at: string;
+            /** Allowed Operations */
+            allowed_operations: components["schemas"]["Operation"][];
+            /** Asset Type Id */
+            asset_type_id: number;
+            /** Asset Type Name */
+            asset_type_name: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Id */
+            id: number;
+            /** Initial Cost */
+            initial_cost: string | null;
+            /** Inventory Number */
+            inventory_number: string;
+            /** Location Id */
+            location_id: number;
+            /** Location Name */
+            location_name: string;
+            /** Model */
+            model: string;
+            /** Needs Review */
+            needs_review: boolean;
+            /** Owner Id */
+            owner_id: number | null;
+            /** Owner Name */
+            owner_name: string | null;
+            /** Purchased At */
+            purchased_at: string | null;
+            /** Serial Number */
+            serial_number: string | null;
+            status: components["schemas"]["AssetStatus"];
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Version */
+            version: number;
+            /** Warranty Until */
+            warranty_until: string | null;
+        };
+        /**
+         * AssetStatus
+         * @enum {string}
+         */
+        AssetStatus: "in_stock" | "reserved" | "in_use" | "in_repair" | "written_off";
         /** AssetTypeCreate */
         AssetTypeCreate: {
             /** Name */
@@ -587,6 +774,29 @@ export interface components {
             is_active?: boolean | null;
             /** Name */
             name?: string | null;
+        };
+        /** AssetUpdate */
+        AssetUpdate: {
+            /** Accepted At */
+            accepted_at?: string | null;
+            /** Asset Type Id */
+            asset_type_id?: number | null;
+            /** Initial Cost */
+            initial_cost?: number | string | null;
+            /** Inventory Number */
+            inventory_number?: string | null;
+            /** Model */
+            model?: string | null;
+            /** Needs Review */
+            needs_review?: boolean | null;
+            /** Purchased At */
+            purchased_at?: string | null;
+            /** Serial Number */
+            serial_number?: string | null;
+            /** Version */
+            version: number;
+            /** Warranty Until */
+            warranty_until?: string | null;
         };
         /** ChangePasswordRequest */
         ChangePasswordRequest: {
@@ -710,6 +920,33 @@ export interface components {
             /** Must Change Password */
             must_change_password: boolean;
             role: components["schemas"]["UserRole"];
+        };
+        /**
+         * Operation
+         * @enum {string}
+         */
+        Operation: "issue" | "return" | "reserve" | "unreserve" | "to_repair" | "repair_to_owner" | "repair_to_stock" | "write_off" | "move";
+        /** Page[AssetEventRead] */
+        Page_AssetEventRead_: {
+            /** Items */
+            items: components["schemas"]["AssetEventRead"][];
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
+            /** Total */
+            total: number;
+        };
+        /** Page[AssetRead] */
+        Page_AssetRead_: {
+            /** Items */
+            items: components["schemas"]["AssetRead"][];
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
+            /** Total */
+            total: number;
         };
         /** Page[UserRead] */
         Page_UserRead_: {
@@ -1854,6 +2091,267 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Некорректные данные запроса */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Внутренняя ошибка сервера */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Ошибка запроса */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    list_assets_api_assets_get: {
+        parameters: {
+            query?: {
+                status?: components["schemas"]["AssetStatus"][] | null;
+                asset_type_id?: number | null;
+                owner_id?: number | null;
+                location_id?: number | null;
+                needs_review?: boolean | null;
+                q?: string | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_AssetRead_"];
+                };
+            };
+            /** @description Некорректные данные запроса */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Внутренняя ошибка сервера */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Ошибка запроса */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    create_asset_api_assets_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AssetCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssetRead"];
+                };
+            };
+            /** @description Некорректные данные запроса */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Внутренняя ошибка сервера */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Ошибка запроса */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    get_asset_api_assets__asset_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                asset_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssetRead"];
+                };
+            };
+            /** @description Некорректные данные запроса */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Внутренняя ошибка сервера */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Ошибка запроса */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    update_asset_api_assets__asset_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                asset_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AssetUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssetRead"];
+                };
+            };
+            /** @description Некорректные данные запроса */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Внутренняя ошибка сервера */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Ошибка запроса */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    list_asset_events_api_assets__asset_id__events_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                asset_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_AssetEventRead_"];
+                };
             };
             /** @description Некорректные данные запроса */
             422: {
