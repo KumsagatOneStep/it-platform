@@ -13,7 +13,7 @@ import { AssetPage, AssetsPage, IssuePage } from "../features/assets";
 import { DepartmentsPage } from "../features/departments";
 import { DirectoriesPage } from "../features/directories";
 import { HomePage } from "../features/home";
-import { StockPage } from "../features/stock";
+import { StockItemPage, StockPage } from "../features/stock";
 import { UsersPage } from "../features/users";
 import { BlankLayout } from "../layout/BlankLayout";
 import { FullLayout } from "../layout/FullLayout";
@@ -55,6 +55,7 @@ export const routes: RouteObject[] = [
             element: <RequireRole role="admin" />,
             children: [
               { path: "/equipment/stock", element: <StockPage /> },
+              { path: "/equipment/stock/:id", element: <StockItemPage /> },
               { path: "/equipment/issue", element: <IssuePage /> },
               { path: "/admin/users", element: <UsersPage /> },
               { path: "/admin/departments", element: <DepartmentsPage /> },

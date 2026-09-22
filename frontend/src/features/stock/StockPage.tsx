@@ -18,6 +18,7 @@ import { PageContainer } from "../../shared/ui/PageContainer";
 import { useStockItems } from "./api";
 import type { StockItem } from "./labels";
 import { StockItemFormDialog } from "./StockItemFormDialog";
+import { StockOperationDialog } from "./StockOperationDialog";
 import { StockQuantityChip } from "./StockQuantityChip";
 
 const FILTERS = {
@@ -70,6 +71,7 @@ export function StockPage() {
   const categories = useStockCategories();
   const locations = useLocations();
   const [creating, setCreating] = useState(false);
+  const [receiving, setReceiving] = useState(false);
 
   const toggle = (key: "low" | "inactive", label: string) => (
     <FormControlLabel
@@ -88,13 +90,18 @@ export function StockPage() {
       title="Расходники"
       breadcrumbs={[{ label: "Склад и техника" }, { label: "Расходники" }]}
       actions={
-        <Button
-          variant="contained"
-          startIcon={<IconPlus size={18} />}
-          onClick={() => setCreating(true)}
-        >
-          Добавить позицию
-        </Button>
+        <>
+          <Button variant="outlined" onClick={() => setReceiving(true)}>
+            Приход
+          </Button>
+          <Button
+            variant="contained"
+            startIcon={<IconPlus size={18} />}
+            onClick={() => setCreating(true)}
+          >
+            Добавить позицию
+          </Button>
+        </>
       }
     >
       <FilterBar>
@@ -136,6 +143,9 @@ export function StockPage() {
           onClose={() => setCreating(false)}
           onSaved={(item) => void navigate(`/equipment/stock/${item.id}`)}
         />
+      )}
+      {receiving && (
+        <StockOperationDialog item={null} operation="receipt" onClose={() => setReceiving(false)} />
       )}
     </PageContainer>
   );

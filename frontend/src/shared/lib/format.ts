@@ -31,3 +31,9 @@ export function initialsOf(fullName: string): string {
     .map((part) => part[0]?.toUpperCase() ?? "")
     .join("");
 }
+
+/** Дата «YYYY-MM-DD» по часам браузера (toISOString дал бы дату по UTC). */
+export function localDateIso(date: Date = new Date()): string {
+  const pad = (value: number) => String(value).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
