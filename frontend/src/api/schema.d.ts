@@ -603,6 +603,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/equipment/movements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Movements */
+        get: operations["list_movements_api_equipment_movements_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/stock-items": {
         parameters: {
             query?: never;
@@ -1043,6 +1060,73 @@ export interface components {
             /** Name */
             name?: string | null;
         };
+        /**
+         * JournalEntryRead
+         * @description Строка журнала: событие техники (kind = asset) или движение расходника (kind = stock).
+         */
+        JournalEntryRead: {
+            asset_event_type: components["schemas"]["AssetEventType"] | null;
+            asset_operation: components["schemas"]["Operation"] | null;
+            /** Comment */
+            comment: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Delta */
+            delta: number | null;
+            /** Document Date */
+            document_date: string | null;
+            /** From Location Id */
+            from_location_id: number | null;
+            /** From Location Name */
+            from_location_name: string | null;
+            /** From Owner Id */
+            from_owner_id: number | null;
+            /** From Owner Name */
+            from_owner_name: string | null;
+            from_status: components["schemas"]["AssetStatus"] | null;
+            /** Id */
+            id: number;
+            kind: components["schemas"]["JournalKind"];
+            movement_type: components["schemas"]["StockMovementType"] | null;
+            /** Object Id */
+            object_id: number;
+            /** Object Label */
+            object_label: string;
+            /** Performed By */
+            performed_by: number;
+            /** Performed By Name */
+            performed_by_name: string;
+            /** Quantity After */
+            quantity_after: number | null;
+            /** Reason Id */
+            reason_id: number | null;
+            /** Reason Name */
+            reason_name: string | null;
+            /** To Location Id */
+            to_location_id: number | null;
+            /** To Location Name */
+            to_location_name: string | null;
+            /** To Owner Id */
+            to_owner_id: number | null;
+            /** To Owner Name */
+            to_owner_name: string | null;
+            to_status: components["schemas"]["AssetStatus"] | null;
+            /** Unit */
+            unit: string | null;
+        };
+        /**
+         * JournalGroup
+         * @enum {string}
+         */
+        JournalGroup: "issue" | "return" | "receipt" | "write_off" | "adjustment" | "transfer" | "status" | "record";
+        /**
+         * JournalKind
+         * @enum {string}
+         */
+        JournalKind: "asset" | "stock";
         /** LocationCreate */
         LocationCreate: {
             /** Description */
@@ -1123,6 +1207,17 @@ export interface components {
         Page_AssetRead_: {
             /** Items */
             items: components["schemas"]["AssetRead"][];
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
+            /** Total */
+            total: number;
+        };
+        /** Page[JournalEntryRead] */
+        Page_JournalEntryRead_: {
+            /** Items */
+            items: components["schemas"]["JournalEntryRead"][];
             /** Limit */
             limit: number;
             /** Offset */
@@ -3463,6 +3558,63 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CheckoutResult"];
+                };
+            };
+            /** @description Некорректные данные запроса */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Внутренняя ошибка сервера */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Ошибка запроса */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    list_movements_api_equipment_movements_get: {
+        parameters: {
+            query?: {
+                date_from?: string | null;
+                date_to?: string | null;
+                kind?: components["schemas"]["JournalKind"] | null;
+                group?: components["schemas"]["JournalGroup"][] | null;
+                person_id?: number | null;
+                performed_by?: number | null;
+                location_id?: number | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_JournalEntryRead_"];
                 };
             };
             /** @description Некорректные данные запроса */
