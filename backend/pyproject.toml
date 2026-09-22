@@ -73,7 +73,7 @@ forbidden_modules = ["app.modules"]
 [[tool.importlinter.contracts]]
 name = "Другие модули используют users_auth только через service и events"
 type = "forbidden"
-source_modules = ["app.modules.directories"]
+source_modules = ["app.modules.directories", "app.modules.assets"]
 forbidden_modules = [
     "app.modules.users_auth.models",
     "app.modules.users_auth.schemas",
@@ -96,7 +96,7 @@ forbidden_modules = ["app.modules.directories"]
 [[tool.importlinter.contracts]]
 name = "Другие модули используют directories только через service и events"
 type = "forbidden"
-source_modules = ["app.modules.users_auth"]
+source_modules = ["app.modules.users_auth", "app.modules.assets"]
 forbidden_modules = [
     "app.modules.directories.models",
     "app.modules.directories.schemas",
@@ -108,3 +108,9 @@ forbidden_modules = [
     "app.modules.directories.reference_router",
 ]
 allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "users_auth и directories не зависят от assets (связь только через события)"
+type = "forbidden"
+source_modules = ["app.modules.users_auth", "app.modules.directories"]
+forbidden_modules = ["app.modules.assets"]

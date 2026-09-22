@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.modules.users_auth.deps import (
@@ -23,6 +24,8 @@ __all__ = [
     "UserRole",
     "create_first_admin",
     "get_user_info",
+    "get_user_names",
+    "list_department_user_ids",
     "require_roles",
 ]
 
@@ -49,3 +52,17 @@ async def get_user_info(session: AsyncSession, user_id: int) -> UserInfo | None:
         department_id=user.department_id,
         is_active=user.is_active,
     )
+
+
+async def get_user_names(session: AsyncSession, user_ids: set[int]) -> dict[int, str]:
+    """ФИО пользователей по id (для подписей в чужих модулях)."""
+    if not user_ids:
+        return {}
+    rows = await session.execute(select(User.id, User.full_name).where(User.id.in_(user_ids)))
+    return {user_id: full_name for user_id, full_name in rows.tuples()}
+
+
+async def list_department_user_ids(session: AsyncSession, department_id: int) -> list[int]:
+    """Все пользователи отдела, включая деактивированных (их техника тоже числится за отделом)."""
+    rows = await session.scalars(select(User.id).where(User.department_id == department_id))
+    return list(rows)
