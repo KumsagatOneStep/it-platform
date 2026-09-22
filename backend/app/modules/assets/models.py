@@ -43,6 +43,8 @@ class AssetEventType(StrEnum):
 
 
 def _enum_column(enum: type[StrEnum]) -> SAEnum:
+    # create_constraint=False: CHECK ck_assets_status / ck_asset_events_event_type создаются
+    # миграцией 0005 вручную, как ck_users_role в users_auth (миграция 0002).
     return SAEnum(
         enum,
         native_enum=False,

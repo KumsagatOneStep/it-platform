@@ -201,6 +201,12 @@ async def test_edit_records_changes_and_checks_version(
     assert events[0]["changes"] == {"model": ["Lenovo ThinkPad T14", "Lenovo ThinkPad T14 Gen 5"]}
     assert events[0]["to_status"] is None
     assert events[0]["to_location_id"] is None
+    audit = await db_session.scalars(
+        select(AuditLog.action).where(
+            AuditLog.entity_type == "asset", AuditLog.entity_id == str(created["id"])
+        )
+    )
+    assert "edited" in list(audit)
 
 
 async def test_edit_without_changes_keeps_version(
@@ -215,6 +221,10 @@ async def test_edit_without_changes_keeps_version(
     )
 
     assert response.json()["version"] == 1
+    events = (
+        await client.get(f"/api/assets/{created['id']}/events", headers=admin_headers)
+    ).json()["items"]
+    assert [event["event_type"] for event in events] == ["created"]
 
 
 async def test_edit_rejects_null_for_required_field_and_duplicate_number(

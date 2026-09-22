@@ -115,6 +115,8 @@ async def _lock_for_bulk(
     session: AsyncSession, asset_ids: list[int], required_status: AssetStatus
 ) -> list[Asset]:
     """Блокирует активы; если хоть один не найден или не в нужном статусе — 409 целиком."""
+    # Без фильтра видимости: эндпоинты массовых операций доступны только Admin;
+    # добавить visibility_filter, если это когда-нибудь откроют другим ролям.
     unique_ids = sorted(set(asset_ids))
     assets = list(
         await session.scalars(
