@@ -6,6 +6,7 @@ from app.core.errors import ERROR_RESPONSES, register_error_handlers
 from app.core.health import router as health_router
 from app.core.logging import configure_logging
 from app.core.middleware import RequestIdMiddleware
+from app.modules.assets.equipment_router import router as equipment_router
 from app.modules.assets.router import router as assets_router
 from app.modules.assets.stock_router import router as stock_router
 from app.modules.directories.router import routers as directories_routers
@@ -44,6 +45,7 @@ def create_app() -> FastAPI:
         *directories_routers,
         assets_router,
         stock_router,
+        equipment_router,
     ):
         app.include_router(router, prefix="/api", responses=ERROR_RESPONSES)
     return app

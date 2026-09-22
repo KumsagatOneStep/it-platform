@@ -330,23 +330,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/assets/issue": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Issue Assets */
-        post: operations["issue_assets_api_assets_issue_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/assets/return": {
         parameters: {
             query?: never;
@@ -603,6 +586,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/equipment/checkout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Checkout */
+        post: operations["checkout_api_equipment_checkout_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/stock-items": {
         parameters: {
             query?: never;
@@ -819,17 +819,6 @@ export interface components {
          * @enum {string}
          */
         AssetEventType: "created" | "issued" | "returned" | "status_changed" | "moved" | "edited" | "written_off";
-        /** AssetIssueRequest */
-        AssetIssueRequest: {
-            /** Asset Ids */
-            asset_ids: number[];
-            /** Comment */
-            comment?: string | null;
-            /** Owner Id */
-            owner_id: number;
-            /** Reason Id */
-            reason_id?: number | null;
-        };
         /** AssetRead */
         AssetRead: {
             /**
@@ -945,6 +934,32 @@ export interface components {
             current_password: string;
             /** New Password */
             new_password: string;
+        };
+        /** CheckoutRequest */
+        CheckoutRequest: {
+            /**
+             * Asset Ids
+             * @default []
+             */
+            asset_ids: number[];
+            /** Comment */
+            comment?: string | null;
+            /** Reason Id */
+            reason_id?: number | null;
+            /** Recipient Id */
+            recipient_id: number;
+            /**
+             * Stock Lines
+             * @default []
+             */
+            stock_lines: components["schemas"]["StockLine"][];
+        };
+        /** CheckoutResult */
+        CheckoutResult: {
+            /** Assets */
+            assets: components["schemas"]["AssetRead"][];
+            /** Stock Items */
+            stock_items: components["schemas"]["StockItemRead"][];
         };
         /** DepartmentCreate */
         DepartmentCreate: {
@@ -1279,6 +1294,13 @@ export interface components {
             unit?: string | null;
             /** Version */
             version: number;
+        };
+        /** StockLine */
+        StockLine: {
+            /** Quantity */
+            quantity: number;
+            /** Stock Item Id */
+            stock_item_id: number;
         };
         /** StockMovementRead */
         StockMovementRead: {
@@ -2626,57 +2648,6 @@ export interface operations {
             };
         };
     };
-    issue_assets_api_assets_issue_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AssetIssueRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AssetRead"][];
-                };
-            };
-            /** @description Некорректные данные запроса */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Внутренняя ошибка сервера */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Ошибка запроса */
-            "4XX": {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-        };
-    };
     return_assets_api_assets_return_post: {
         parameters: {
             query?: never;
@@ -3441,6 +3412,57 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TicketTypeRead"][];
+                };
+            };
+            /** @description Некорректные данные запроса */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Внутренняя ошибка сервера */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Ошибка запроса */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    checkout_api_equipment_checkout_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CheckoutRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CheckoutResult"];
                 };
             };
             /** @description Некорректные данные запроса */

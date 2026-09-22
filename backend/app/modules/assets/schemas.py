@@ -142,13 +142,6 @@ AssetOperationRequest = Annotated[
 ]
 
 
-class AssetIssueRequest(BaseModel):
-    owner_id: int
-    asset_ids: AssetIds
-    reason_id: int | None = None
-    comment: Comment = None
-
-
 class AssetReturnRequest(BaseModel):
     asset_ids: AssetIds
     location_id: int | None = None
@@ -156,7 +149,7 @@ class AssetReturnRequest(BaseModel):
 
 
 class UnavailableAsset(BaseModel):
-    """Элемент details ошибки assets_unavailable."""
+    """Элемент details ошибок assets_unavailable и checkout_unavailable."""
 
     asset_id: int
     inventory_number: str | None

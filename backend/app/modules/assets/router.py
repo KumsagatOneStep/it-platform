@@ -11,7 +11,6 @@ from app.modules.assets.presenter import asset_to_read, assets_to_read, events_t
 from app.modules.assets.schemas import (
     AssetCreate,
     AssetEventRead,
-    AssetIssueRequest,
     AssetOperationRequest,
     AssetRead,
     AssetReturnRequest,
@@ -89,21 +88,6 @@ async def list_asset_events(
         limit=pagination.limit,
         offset=pagination.offset,
     )
-
-
-@router.post("/issue", response_model=list[AssetRead])
-async def issue_assets(
-    body: AssetIssueRequest, session: SessionDep, admin: AdminDep
-) -> list[AssetRead]:
-    assets = await operations.issue_assets(
-        session,
-        admin,
-        owner_id=body.owner_id,
-        asset_ids=body.asset_ids,
-        reason_id=body.reason_id,
-        comment=body.comment,
-    )
-    return await assets_to_read(session, assets, admin)
 
 
 @router.post("/return", response_model=list[AssetRead])

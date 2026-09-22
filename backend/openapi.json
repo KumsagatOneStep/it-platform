@@ -344,52 +344,6 @@
         "title": "AssetEventType",
         "type": "string"
       },
-      "AssetIssueRequest": {
-        "properties": {
-          "asset_ids": {
-            "items": {
-              "type": "integer"
-            },
-            "maxItems": 50,
-            "minItems": 1,
-            "title": "Asset Ids",
-            "type": "array"
-          },
-          "comment": {
-            "anyOf": [
-              {
-                "maxLength": 1000,
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Comment"
-          },
-          "owner_id": {
-            "title": "Owner Id",
-            "type": "integer"
-          },
-          "reason_id": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Reason Id"
-          }
-        },
-        "required": [
-          "owner_id",
-          "asset_ids"
-        ],
-        "title": "AssetIssueRequest",
-        "type": "object"
-      },
       "AssetRead": {
         "properties": {
           "accepted_at": {
@@ -813,6 +767,84 @@
           "new_password"
         ],
         "title": "ChangePasswordRequest",
+        "type": "object"
+      },
+      "CheckoutRequest": {
+        "properties": {
+          "asset_ids": {
+            "default": [],
+            "items": {
+              "type": "integer"
+            },
+            "maxItems": 50,
+            "title": "Asset Ids",
+            "type": "array"
+          },
+          "comment": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Comment"
+          },
+          "reason_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason Id"
+          },
+          "recipient_id": {
+            "title": "Recipient Id",
+            "type": "integer"
+          },
+          "stock_lines": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/StockLine"
+            },
+            "maxItems": 50,
+            "title": "Stock Lines",
+            "type": "array"
+          }
+        },
+        "required": [
+          "recipient_id"
+        ],
+        "title": "CheckoutRequest",
+        "type": "object"
+      },
+      "CheckoutResult": {
+        "properties": {
+          "assets": {
+            "items": {
+              "$ref": "#/components/schemas/AssetRead"
+            },
+            "title": "Assets",
+            "type": "array"
+          },
+          "stock_items": {
+            "items": {
+              "$ref": "#/components/schemas/StockItemRead"
+            },
+            "title": "Stock Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "assets",
+          "stock_items"
+        ],
+        "title": "CheckoutResult",
         "type": "object"
       },
       "DepartmentCreate": {
@@ -1809,6 +1841,26 @@
           "version"
         ],
         "title": "StockItemUpdate",
+        "type": "object"
+      },
+      "StockLine": {
+        "properties": {
+          "quantity": {
+            "maximum": 1000000.0,
+            "minimum": 1.0,
+            "title": "Quantity",
+            "type": "integer"
+          },
+          "stock_item_id": {
+            "title": "Stock Item Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "stock_item_id",
+          "quantity"
+        ],
+        "title": "StockLine",
         "type": "object"
       },
       "StockMovementRead": {
@@ -4211,76 +4263,6 @@
         ]
       }
     },
-    "/api/assets/issue": {
-      "post": {
-        "operationId": "issue_assets_api_assets_issue_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AssetIssueRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/AssetRead"
-                  },
-                  "title": "Response Issue Assets Api Assets Issue Post",
-                  "type": "array"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Некорректные данные запроса"
-          },
-          "4XX": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Ошибка запроса"
-          },
-          "500": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Внутренняя ошибка сервера"
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "summary": "Issue Assets",
-        "tags": [
-          "assets"
-        ]
-      }
-    },
     "/api/assets/return": {
       "post": {
         "operationId": "return_assets_api_assets_return_post",
@@ -5408,6 +5390,72 @@
         "summary": "List Items",
         "tags": [
           "directories"
+        ]
+      }
+    },
+    "/api/equipment/checkout": {
+      "post": {
+        "operationId": "checkout_api_equipment_checkout_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CheckoutRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckoutResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Некорректные данные запроса"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Ошибка запроса"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Внутренняя ошибка сервера"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Checkout",
+        "tags": [
+          "equipment"
         ]
       }
     },

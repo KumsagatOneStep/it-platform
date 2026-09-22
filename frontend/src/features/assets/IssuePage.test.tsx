@@ -32,12 +32,13 @@ test("выдача: при 409 недоступная техника подсв�
       expect(url.searchParams.getAll("status")).toEqual(["in_stock"]);
       return HttpResponse.json(page(FREE));
     }),
-    http.post("*/api/assets/issue", async ({ request }) => {
+    http.post("*/api/equipment/checkout", async ({ request }) => {
       body = await request.json();
       return HttpResponse.json(
-        errorBody("assets_unavailable", "Часть техники недоступна", [
-          { asset_id: 101, inventory_number: "INV-002", status: "in_use" },
-        ]),
+        errorBody("checkout_unavailable", "Часть техники недоступна", {
+          assets: [{ asset_id: 101, inventory_number: "INV-002", status: "in_use" }],
+          stock: [],
+        }),
         { status: 409 },
       );
     }),
@@ -53,7 +54,13 @@ test("выдача: при 409 недоступная техника подсв�
   await user.click(within(section).getByRole("button", { name: "Выдать" }));
 
   expect(await within(section).findByText(/выделена красным/)).toBeInTheDocument();
-  expect(body).toEqual({ owner_id: 10, asset_ids: [100, 101], reason_id: null, comment: null });
+  expect(body).toEqual({
+    recipient_id: 10,
+    asset_ids: [100, 101],
+    stock_lines: [],
+    reason_id: null,
+    comment: null,
+  });
   const taken = within(section).getByText("INV-002 — Dell Latitude").closest(".MuiChip-root")!;
   expect(taken).toHaveClass("MuiChip-colorError");
 });
@@ -63,7 +70,7 @@ test("выдача: 422 recipient_invalid показывает ошибку у �
   mockAssetLookups();
   server.use(
     http.get("*/api/assets", () => HttpResponse.json(page(FREE))),
-    http.post("*/api/assets/issue", () =>
+    http.post("*/api/equipment/checkout", () =>
       HttpResponse.json(errorBody("recipient_invalid", "Сотрудник недоступен для выдачи"), {
         status: 422,
       }),

@@ -13,6 +13,8 @@ from app.core.audit import AuditLog
 from app.core.config import get_settings
 from app.core.errors import AppError
 from app.modules.assets import stock_operations
+from app.modules.assets.checkout import checkout
+from app.modules.assets.equipment_schemas import CheckoutRequest, StockLine
 from app.modules.assets.stock_models import StockItem, StockMovement
 from app.modules.assets.stock_schemas import (
     StockOperationRequest,
@@ -171,3 +173,23 @@ async def test_parallel_transfers_create_one_target_item(race: RaceSetup) -> Non
         )
     assert [target.quantity for target in targets] == [4]
     assert await _quantity(race.engine, source) == 6
+
+
+async def test_parallel_checkout_of_last_units_one_wins(race: RaceSetup) -> None:
+    item_id = await race.make_item("Клавиатура", race.first_location_id, 1)
+    request = CheckoutRequest(
+        recipient_id=race.actor.id, stock_lines=[StockLine(stock_item_id=item_id, quantity=1)]
+    )
+
+    async def run() -> str:
+        async with AsyncSession(race.engine, expire_on_commit=False) as session:
+            try:
+                await checkout(session, race.actor, request)
+            except AppError as exc:
+                return exc.code
+            return "ok"
+
+    results = await _gather(run, run)
+
+    assert sorted(results) == ["checkout_unavailable", "ok"]
+    assert await _quantity(race.engine, item_id) == 0

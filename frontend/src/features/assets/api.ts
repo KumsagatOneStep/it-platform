@@ -101,9 +101,10 @@ export function useAssetOperation() {
   );
 }
 
-export function useIssueAssets() {
-  return useAssetsMutation((body: Schemas["AssetIssueRequest"]) =>
-    unwrap(api.POST("/api/assets/issue", { body })),
+/** Единая выдача техники и расходников (POST /api/equipment/checkout). */
+export function useCheckout() {
+  return useAssetsMutation((body: Schemas["CheckoutRequest"]) =>
+    unwrap(api.POST("/api/equipment/checkout", { body })),
   );
 }
 

@@ -1,4 +1,6 @@
-"""Операции над активами по таблице переходов: одиночные и массовые выдача и возврат.
+"""Операции над активами по таблице переходов: одиночные и массовый возврат.
+
+Массовая выдача — в составе единой выдачи (checkout.py).
 
 Строки активов блокируются SELECT … FOR UPDATE (массово — в порядке id, чтобы не было
 взаимных блокировок); статус проверяется уже под блокировкой, поэтому параллельная
@@ -69,7 +71,9 @@ async def _validate(session: AsyncSession, data: OperationInput) -> None:
         await check_location(session, data.location_id)
 
 
-def _apply(session: AsyncSession, asset: Asset, data: OperationInput, actor_id: int) -> None:
+def apply_transition(
+    session: AsyncSession, asset: Asset, data: OperationInput, actor_id: int
+) -> None:
     transition = TRANSITIONS[data.operation]
     before = Placement.of(asset)
     if transition.to_status is not None:
@@ -105,60 +109,35 @@ async def apply_operation(
             code="operation_not_allowed",
             details={"status": asset.status.value},
         )
-    _apply(session, asset, data, actor.id)
+    apply_transition(session, asset, data, actor.id)
     await session.flush()
     await session.commit()
     return asset
 
 
-async def _lock_for_bulk(
-    session: AsyncSession, asset_ids: list[int], required_status: AssetStatus
-) -> list[Asset]:
-    """Блокирует активы; если хоть один не найден или не в нужном статусе — 409 целиком."""
-    # Без фильтра видимости: эндпоинты массовых операций доступны только Admin;
+async def lock_assets(session: AsyncSession, asset_ids: list[int]) -> dict[int, Asset]:
+    """Блокирует активы в порядке id (без взаимных блокировок); отсутствующих в ответе нет."""
+    # Без фильтра видимости: массовые операции доступны только Admin;
     # добавить visibility_filter, если это когда-нибудь откроют другим ролям.
-    unique_ids = sorted(set(asset_ids))
-    assets = list(
-        await session.scalars(
-            select(Asset).where(Asset.id.in_(unique_ids)).order_by(Asset.id).with_for_update()
-        )
+    rows = await session.scalars(
+        select(Asset).where(Asset.id.in_(set(asset_ids))).order_by(Asset.id).with_for_update()
     )
-    found = {asset.id: asset for asset in assets}
-    unavailable = [
+    return {asset.id: asset for asset in rows}
+
+
+def unavailable_assets(
+    found: dict[int, Asset], asset_ids: list[int], required_status: AssetStatus
+) -> list[UnavailableAsset]:
+    """Активы из asset_ids (в их порядке), которые не найдены или не в нужном статусе."""
+    return [
         UnavailableAsset(
             asset_id=asset_id,
             inventory_number=found[asset_id].inventory_number if asset_id in found else None,
             status=found[asset_id].status if asset_id in found else None,
         )
-        for asset_id in unique_ids
+        for asset_id in asset_ids
         if asset_id not in found or found[asset_id].status != required_status
     ]
-    if unavailable:
-        raise ConflictError(
-            "Часть техники недоступна для операции",
-            code="assets_unavailable",
-            details=[item.model_dump(mode="json") for item in unavailable],
-        )
-    return assets
-
-
-async def issue_assets(
-    session: AsyncSession,
-    actor: CurrentUser,
-    *,
-    owner_id: int,
-    asset_ids: list[int],
-    reason_id: int | None,
-    comment: str | None,
-) -> list[Asset]:
-    data = OperationInput(Operation.ISSUE, owner_id=owner_id, reason_id=reason_id, comment=comment)
-    await _validate(session, data)
-    assets = await _lock_for_bulk(session, asset_ids, AssetStatus.IN_STOCK)
-    for asset in assets:
-        _apply(session, asset, data, actor.id)
-    await session.flush()
-    await session.commit()
-    return assets
 
 
 async def return_assets(
@@ -171,9 +150,18 @@ async def return_assets(
 ) -> list[Asset]:
     data = OperationInput(Operation.RETURN, location_id=location_id, comment=comment)
     await _validate(session, data)
-    assets = await _lock_for_bulk(session, asset_ids, AssetStatus.IN_USE)
+    unique_ids = sorted(set(asset_ids))
+    found = await lock_assets(session, unique_ids)
+    unavailable = unavailable_assets(found, unique_ids, AssetStatus.IN_USE)
+    if unavailable:
+        raise ConflictError(
+            "Часть техники недоступна для операции",
+            code="assets_unavailable",
+            details=[item.model_dump(mode="json") for item in unavailable],
+        )
+    assets = list(found.values())
     for asset in assets:
-        _apply(session, asset, data, actor.id)
+        apply_transition(session, asset, data, actor.id)
     await session.flush()
     await session.commit()
     return assets

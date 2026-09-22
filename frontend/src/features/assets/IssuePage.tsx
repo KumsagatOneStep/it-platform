@@ -25,7 +25,7 @@ import { PageContainer } from "../../shared/ui/PageContainer";
 import { FormAutocomplete } from "../../shared/ui/form/FormAutocomplete";
 import { FormSelect } from "../../shared/ui/form/FormSelect";
 import { FormTextField } from "../../shared/ui/form/FormTextField";
-import { useAssets, useIssueAssets, useReturnAssets } from "./api";
+import { useAssets, useCheckout, useReturnAssets } from "./api";
 import { AssetMultiPicker } from "./AssetMultiPicker";
 import type { Asset } from "./labels";
 
@@ -36,16 +36,16 @@ const errorMessage = (error: unknown) =>
 const MAX_BULK_SELECTION = 50;
 const BULK_LIMIT_MESSAGE = `Не больше ${MAX_BULK_SELECTION} единиц за раз`;
 
-/** Элемент details ошибки assets_unavailable (backend: UnavailableAsset). */
-interface UnavailableAsset {
-  asset_id: number;
+/** details ошибки checkout_unavailable (backend: CheckoutUnavailable). */
+interface CheckoutUnavailable {
+  assets: { asset_id: number }[];
 }
 
-/** id активов из details ошибки assets_unavailable. */
+/** id активов из details ошибки checkout_unavailable. */
 function unavailableOf(error: unknown): Set<number> {
-  if (!(error instanceof ApiError) || error.code !== "assets_unavailable") return new Set();
-  const details = error.details as UnavailableAsset[] | null;
-  return new Set((details ?? []).map((item) => item.asset_id));
+  if (!(error instanceof ApiError) || error.code !== "checkout_unavailable") return new Set();
+  const details = error.details as CheckoutUnavailable | null;
+  return new Set((details?.assets ?? []).map((item) => item.asset_id));
 }
 
 export function IssuePage() {
@@ -79,7 +79,7 @@ function IssueSection() {
   const { enqueueSnackbar } = useSnackbar();
   const { nameOf } = useUserNames();
   const reasons = useAssetIssueReasons();
-  const issue = useIssueAssets();
+  const issue = useCheckout();
   const [unavailable, setUnavailable] = useState<ReadonlySet<number>>(new Set());
   const [formError, setFormError] = useState<string | null>(null);
   const {
@@ -96,16 +96,17 @@ function IssueSection() {
     setFormError(null);
     try {
       const issued = await issue.mutateAsync({
-        owner_id: values.owner_id!,
+        recipient_id: values.owner_id!,
         asset_ids: values.asset_ids.map((asset) => asset.id),
+        stock_lines: [],
         reason_id: values.reason_id,
         comment: values.comment.trim() || null,
       });
-      enqueueSnackbar(`Выдано: ${issued.length}`, { variant: "success" });
+      enqueueSnackbar(`Выдано: ${issued.assets.length}`, { variant: "success" });
       reset({ owner_id: values.owner_id, asset_ids: [], reason_id: null, comment: "" });
       setUnavailable(new Set());
     } catch (caught) {
-      if (caught instanceof ApiError && caught.code === "assets_unavailable") {
+      if (caught instanceof ApiError && caught.code === "checkout_unavailable") {
         setUnavailable(unavailableOf(caught));
         setFormError(
           "Часть техники уже недоступна — она выделена красным. Уберите её и повторите.",

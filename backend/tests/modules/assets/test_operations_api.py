@@ -154,64 +154,67 @@ async def test_operations_require_admin(
     headers = await login(client, manager.email)
 
     single = await _operate(client, headers, asset.id, operation="reserve")
-    bulk = await client.post(
-        "/api/assets/issue", headers=headers, json={"owner_id": manager.id, "asset_ids": [asset.id]}
-    )
+    bulk = await client.post("/api/assets/return", headers=headers, json={"asset_ids": [asset.id]})
 
     assert single.status_code == 403
     assert bulk.status_code == 403
 
 
-async def test_bulk_issue_and_return(
+async def test_bulk_return(
     client: AsyncClient, admin_headers: dict[str, str], refs: Refs, db_session: AsyncSession
 ) -> None:
     employee = await make_user(db_session)
-    first = await make_asset(db_session, refs, inventory_number="INV-1")
-    second = await make_asset(db_session, refs, inventory_number="INV-2")
-
-    issued = await client.post(
-        "/api/assets/issue",
-        headers=admin_headers,
-        json={
-            "owner_id": employee.id,
-            "asset_ids": [second.id, first.id, first.id],
-            "reason_id": refs.new_employee.id,
-        },
+    first = await make_asset(
+        db_session, refs, inventory_number="INV-1", status=AssetStatus.IN_USE, owner_id=employee.id
     )
-    assert issued.status_code == 200, issued.text
-    assert [item["inventory_number"] for item in issued.json()] == ["INV-1", "INV-2"]
-    assert {item["owner_id"] for item in issued.json()} == {employee.id}
+    second = await make_asset(
+        db_session, refs, inventory_number="INV-2", status=AssetStatus.IN_USE, owner_id=employee.id
+    )
 
     returned = await client.post(
         "/api/assets/return",
         headers=admin_headers,
-        json={"asset_ids": [first.id, second.id], "location_id": refs.office.id},
+        json={"asset_ids": [second.id, first.id, first.id], "location_id": refs.office.id},
     )
+
     assert returned.status_code == 200, returned.text
+    assert [item["inventory_number"] for item in returned.json()] == ["INV-1", "INV-2"]
     assert {item["status"] for item in returned.json()} == {"in_stock"}
+    assert {item["owner_id"] for item in returned.json()} == {None}
     assert {item["location_id"] for item in returned.json()} == {refs.office.id}
 
 
-async def test_bulk_issue_is_all_or_nothing(
+async def test_bulk_return_is_all_or_nothing(
     client: AsyncClient, admin_headers: dict[str, str], refs: Refs, db_session: AsyncSession
 ) -> None:
     employee = await make_user(db_session)
-    free = await make_asset(db_session, refs, inventory_number="INV-1")
-    taken = await make_asset(
-        db_session, refs, inventory_number="INV-2", status=AssetStatus.IN_USE, owner_id=employee.id
+    in_use = await make_asset(
+        db_session, refs, inventory_number="INV-1", status=AssetStatus.IN_USE, owner_id=employee.id
     )
+    free = await make_asset(db_session, refs, inventory_number="INV-2")
 
     response = await client.post(
-        "/api/assets/issue",
+        "/api/assets/return",
         headers=admin_headers,
-        json={"owner_id": employee.id, "asset_ids": [free.id, taken.id, 999999]},
+        json={"asset_ids": [in_use.id, free.id, 999999]},
     )
 
     assert response.status_code == 409
     assert _error_code(response) == "assets_unavailable"
     assert response.json()["error"]["details"] == [
-        {"asset_id": taken.id, "inventory_number": "INV-2", "status": "in_use"},
+        {"asset_id": free.id, "inventory_number": "INV-2", "status": "in_stock"},
         {"asset_id": 999999, "inventory_number": None, "status": None},
     ]
-    await db_session.refresh(free)
-    assert free.status == AssetStatus.IN_STOCK
+    await db_session.refresh(in_use)
+    assert in_use.status == AssetStatus.IN_USE
+
+
+async def test_bulk_issue_endpoint_removed(
+    client: AsyncClient, admin_headers: dict[str, str]
+) -> None:
+    """Выдача нескольких единиц — только через POST /api/equipment/checkout."""
+    response = await client.post(
+        "/api/assets/issue", headers=admin_headers, json={"owner_id": 1, "asset_ids": [1]}
+    )
+
+    assert response.status_code == 405
