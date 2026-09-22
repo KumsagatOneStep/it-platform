@@ -65,12 +65,17 @@ export function useAssetEvents(id: number, limit: number, offset: number) {
   });
 }
 
-/** Мутация, после которой перезапрашиваются все данные техники (реестр, карточка, история). */
+/** Мутация, после которой перезапрашиваются данные техники (реестр, карточка, история) и журнал. */
 function useAssetsMutation<V, R>(mutationFn: (variables: V) => Promise<R>) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn,
-    onSettled: () => queryClient.invalidateQueries({ queryKey: queryKeys.assets }),
+    onSettled: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.assets }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.movements }),
+      ]);
+    },
   });
 }
 
@@ -101,11 +106,20 @@ export function useAssetOperation() {
   );
 }
 
-/** Единая выдача техники и расходников (POST /api/equipment/checkout). */
+/** Единая выдача техники и расходников: перезапрашивает и технику, и расходники. */
 export function useCheckout() {
-  return useAssetsMutation((body: Schemas["CheckoutRequest"]) =>
-    unwrap(api.POST("/api/equipment/checkout", { body })),
-  );
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: Schemas["CheckoutRequest"]) =>
+      unwrap(api.POST("/api/equipment/checkout", { body })),
+    onSettled: async () => {
+      await Promise.all(
+        [queryKeys.assets, queryKeys.stock, queryKeys.movements].map((queryKey) =>
+          queryClient.invalidateQueries({ queryKey }),
+        ),
+      );
+    },
+  });
 }
 
 export function useReturnAssets() {

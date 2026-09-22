@@ -4,7 +4,16 @@ import reactHooks from "eslint-plugin-react-hooks";
 import globals from "globals";
 import tseslint from "typescript-eslint";
 
-const FEATURES = ["auth", "home", "users", "departments", "directories"];
+const FEATURES = [
+  "auth",
+  "home",
+  "users",
+  "departments",
+  "directories",
+  "assets",
+  "stock",
+  "movements",
+];
 
 // Фича импортирует другую фичу только через её публичный index.ts.
 const featureZones = FEATURES.flatMap((target) =>
