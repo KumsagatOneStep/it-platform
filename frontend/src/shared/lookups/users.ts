@@ -25,29 +25,31 @@ export function useUserNames() {
 
 export const RESPONSIBLE_OPTIONS_KEY = [...queryKeys.users, "responsible-options"] as const;
 
-/**
- * Варианты ответственного (руководитель отдела, исполнитель по умолчанию): активные Manager и Admin.
- * /api/users не подходит: требует непустой запрос и не фильтрует по роли.
- */
-export async function searchResponsibleOptions(query: string): Promise<EntityOption[]> {
+/** Активные пользователи, подходящие под строку поиска (общий запрос для вариантов сотрудников). */
+async function searchActiveUsers(query: string) {
   const page = await unwrap(
     api.GET("/api/admin/users", {
       params: { query: { q: query.trim() || undefined, is_active: true, limit: 50 } },
     }),
   );
-  return page.items
+  return page.items;
+}
+
+/**
+ * Варианты ответственного (руководитель отдела, исполнитель по умолчанию): активные Manager и Admin.
+ * /api/users не подходит: требует непустой запрос и не фильтрует по роли.
+ */
+export async function searchResponsibleOptions(query: string): Promise<EntityOption[]> {
+  const users = await searchActiveUsers(query);
+  return users
     .filter((user) => user.role !== "employee")
     .map((user) => ({ id: user.id, label: user.full_name }));
 }
 
 /** Варианты активных сотрудников любой роли (для выдачи техники; только администратор). */
 export async function searchActiveUserOptions(query: string): Promise<EntityOption[]> {
-  const page = await unwrap(
-    api.GET("/api/admin/users", {
-      params: { query: { q: query.trim() || undefined, is_active: true, limit: 50 } },
-    }),
-  );
-  return page.items.map((user) => ({ id: user.id, label: user.full_name }));
+  const users = await searchActiveUsers(query);
+  return users.map((user) => ({ id: user.id, label: user.full_name }));
 }
 
 export const ACTIVE_USER_OPTIONS_KEY = [...queryKeys.users, "active-options"] as const;
