@@ -58,6 +58,29 @@ test("выдача: при 409 недоступная техника подсв�
   expect(taken).toHaveClass("MuiChip-colorError");
 });
 
+test("выдача: 422 recipient_invalid показывает ошибку у поля «Кому», а не только в баннере", async () => {
+  mockSignedIn();
+  mockAssetLookups();
+  server.use(
+    http.get("*/api/assets", () => HttpResponse.json(page(FREE))),
+    http.post("*/api/assets/issue", () =>
+      HttpResponse.json(errorBody("recipient_invalid", "Сотрудник недоступен для выдачи"), {
+        status: 422,
+      }),
+    ),
+  );
+  const { user } = renderApp("/equipment/issue");
+
+  const section = await screen.findByRole("region", { name: "Выдать" });
+  await pickEmployee(user, section, "Кому");
+  await user.click(within(section).getByLabelText("Техника"));
+  await user.click(await screen.findByRole("option", { name: "INV-001 — Lenovo ThinkPad T14" }));
+  await user.click(within(section).getByRole("button", { name: "Выдать" }));
+
+  expect(await within(section).findByText("Сотрудник недоступен для выдачи")).toBeInTheDocument();
+  expect(within(section).queryByRole("alert")).not.toBeInTheDocument();
+});
+
 test("выдача без сотрудника и техники подсказывает поля и не отправляет запрос", async () => {
   mockSignedIn();
   mockAssetLookups();
@@ -100,6 +123,36 @@ test("приём: техника сотрудника в работе, отме�
 
   expect(await screen.findByText("Принято на склад: 1")).toBeInTheDocument();
   expect(body).toEqual({ asset_ids: [101], location_id: 6, comment: null });
+});
+
+test("приём: ошибка не 409 не сбрасывает отмеченную технику", async () => {
+  mockSignedIn();
+  mockAssetLookups();
+  server.use(
+    http.get("*/api/assets", ({ request }) => {
+      const url = new URL(request.url);
+      expect(url.searchParams.get("owner_id")).toBe("10");
+      expect(url.searchParams.getAll("status")).toEqual(["in_use"]);
+      return HttpResponse.json(
+        page(FREE.map((asset) => ({ ...asset, status: "in_use" as const, owner_id: 10 }))),
+      );
+    }),
+    http.post("*/api/assets/return", () =>
+      HttpResponse.json(errorBody("operation_not_allowed", "Операция недоступна"), {
+        status: 409,
+      }),
+    ),
+  );
+  const { user } = renderApp("/equipment/issue");
+
+  const section = await screen.findByRole("region", { name: "Принять" });
+  await pickEmployee(user, section, "От кого");
+  const checkbox = await within(section).findByLabelText("INV-002 — Dell Latitude");
+  await user.click(checkbox);
+  await user.click(within(section).getByRole("button", { name: "Принять на склад" }));
+
+  expect(await within(section).findByText("Операция недоступна")).toBeInTheDocument();
+  expect(checkbox).toBeChecked();
 });
 
 test("страница выдачи доступна только администратору", async () => {

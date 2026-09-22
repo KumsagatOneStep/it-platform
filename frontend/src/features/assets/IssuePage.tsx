@@ -5,15 +5,15 @@ import {
   CardContent,
   Checkbox,
   FormControlLabel,
-  MenuItem,
   Stack,
-  TextField,
   Typography,
 } from "@mui/material";
 import { useSnackbar } from "notistack";
 import { useState } from "react";
+import { Controller, useForm } from "react-hook-form";
 
 import { ApiError, UNKNOWN_ERROR_MESSAGE } from "../../api/errors";
+import { applyApiErrors, fieldByCode } from "../../shared/lib/applyApiErrors";
 import { useAssetIssueReasons, useLocations } from "../../shared/lookups/directories";
 import {
   ACTIVE_USER_OPTIONS_KEY,
@@ -22,6 +22,9 @@ import {
 } from "../../shared/lookups/users";
 import { EntityAutocomplete } from "../../shared/ui/EntityAutocomplete";
 import { PageContainer } from "../../shared/ui/PageContainer";
+import { FormAutocomplete } from "../../shared/ui/form/FormAutocomplete";
+import { FormSelect } from "../../shared/ui/form/FormSelect";
+import { FormTextField } from "../../shared/ui/form/FormTextField";
 import { useAssets, useIssueAssets, useReturnAssets } from "./api";
 import { AssetMultiPicker } from "./AssetMultiPicker";
 import type { Asset } from "./labels";
@@ -55,44 +58,64 @@ export function IssuePage() {
   );
 }
 
+interface IssueFormValues {
+  owner_id: number | null;
+  asset_ids: Asset[];
+  reason_id: number | null;
+  comment: string;
+}
+
+const issueFieldForError = fieldByCode<IssueFormValues>({
+  recipient_invalid: "owner_id",
+  reason_invalid: "reason_id",
+  reason_required: "reason_id",
+});
+
 function IssueSection() {
   const { enqueueSnackbar } = useSnackbar();
   const { nameOf } = useUserNames();
   const reasons = useAssetIssueReasons();
   const issue = useIssueAssets();
-  const [ownerId, setOwnerId] = useState<number | null>(null);
-  const [assets, setAssets] = useState<Asset[]>([]);
-  const [reasonId, setReasonId] = useState<number | null>(null);
-  const [comment, setComment] = useState("");
   const [unavailable, setUnavailable] = useState<ReadonlySet<number>>(new Set());
-  const [error, setError] = useState<string | null>(null);
-  const [touched, setTouched] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+  const {
+    control,
+    handleSubmit,
+    setError,
+    reset,
+    formState: { isSubmitting },
+  } = useForm<IssueFormValues>({
+    defaultValues: { owner_id: null, asset_ids: [], reason_id: null, comment: "" },
+  });
 
-  const submit = async () => {
-    setTouched(true);
-    if (ownerId === null || assets.length === 0) return;
-    setError(null);
+  const submit = handleSubmit(async (values) => {
+    setFormError(null);
     try {
       const issued = await issue.mutateAsync({
-        owner_id: ownerId,
-        asset_ids: assets.map((asset) => asset.id),
-        reason_id: reasonId,
-        comment: comment.trim() || null,
+        owner_id: values.owner_id!,
+        asset_ids: values.asset_ids.map((asset) => asset.id),
+        reason_id: values.reason_id,
+        comment: values.comment.trim() || null,
       });
       enqueueSnackbar(`Выдано: ${issued.length}`, { variant: "success" });
-      setAssets([]);
-      setComment("");
+      reset({ owner_id: values.owner_id, asset_ids: [], reason_id: null, comment: "" });
       setUnavailable(new Set());
-      setTouched(false);
     } catch (caught) {
-      setUnavailable(unavailableOf(caught));
-      setError(
-        caught instanceof ApiError && caught.code === "assets_unavailable"
-          ? "Часть техники уже недоступна — она выделена красным. Уберите её и повторите."
-          : errorMessage(caught),
+      if (caught instanceof ApiError && caught.code === "assets_unavailable") {
+        setUnavailable(unavailableOf(caught));
+        setFormError(
+          "Часть техники уже недоступна — она выделена красным. Уберите её и повторите.",
+        );
+        return;
+      }
+      setFormError(
+        applyApiErrors(caught, setError, {
+          fields: ["owner_id", "asset_ids", "reason_id", "comment"],
+          fieldForError: issueFieldForError,
+        }),
       );
     }
-  };
+  });
 
   return (
     <Card variant="outlined">
@@ -101,50 +124,52 @@ function IssueSection() {
           <Typography variant="h5" component="h2">
             Выдать
           </Typography>
-          {error && <Alert severity="error">{error}</Alert>}
-          <EntityAutocomplete
+          {formError && <Alert severity="error">{formError}</Alert>}
+          <FormAutocomplete
+            control={control}
+            name="owner_id"
             label="Кому"
-            value={ownerId}
-            onChange={setOwnerId}
             fetchOptions={searchActiveUserOptions}
             queryKey={ACTIVE_USER_OPTIONS_KEY}
             labelFor={nameOf}
-            error={touched && ownerId === null}
-            helperText={touched && ownerId === null ? "Выберите сотрудника" : undefined}
+            rules={{ required: "Выберите сотрудника" }}
           />
-          <AssetMultiPicker
-            value={assets}
-            onChange={(next) => {
-              setAssets(next);
-              setUnavailable(new Set());
-            }}
-            unavailableIds={unavailable}
-            error={touched && assets.length === 0 ? "Выберите технику" : undefined}
+          <Controller
+            control={control}
+            name="asset_ids"
+            rules={{ validate: (value) => value.length > 0 || "Выберите технику" }}
+            render={({ field, fieldState }) => (
+              <AssetMultiPicker
+                value={field.value}
+                onChange={(next) => {
+                  field.onChange(next);
+                  setUnavailable(new Set());
+                }}
+                unavailableIds={unavailable}
+                error={fieldState.error?.message}
+              />
+            )}
           />
-          <TextField
-            select
+          <FormSelect
+            control={control}
+            name="reason_id"
             label="Причина"
-            value={reasonId === null ? "" : String(reasonId)}
-            onChange={(event) =>
-              setReasonId(event.target.value ? Number(event.target.value) : null)
-            }
-          >
-            <MenuItem value="">Не указана</MenuItem>
-            {(reasons.data ?? []).map((item) => (
-              <MenuItem key={item.id} value={String(item.id)}>
-                {item.name}
-              </MenuItem>
-            ))}
-          </TextField>
-          <TextField
+            emptyLabel="Не указана"
+            options={(reasons.data ?? []).map((item) => ({ value: item.id, label: item.name }))}
+          />
+          <FormTextField
+            control={control}
+            name="comment"
             label="Комментарий"
-            value={comment}
-            onChange={(event) => setComment(event.target.value)}
             multiline
             minRows={2}
           />
           <Stack direction="row">
-            <Button variant="contained" loading={issue.isPending} onClick={() => void submit()}>
+            <Button
+              variant="contained"
+              loading={issue.isPending || isSubmitting}
+              onClick={() => void submit()}
+            >
               Выдать
             </Button>
           </Stack>
@@ -154,6 +179,15 @@ function IssueSection() {
   );
 }
 
+interface ReturnFormValues {
+  location_id: number | null;
+  comment: string;
+}
+
+const returnFieldForError = fieldByCode<ReturnFormValues>({
+  location_invalid: "location_id",
+});
+
 function ReturnSection() {
   const { enqueueSnackbar } = useSnackbar();
   const { nameOf } = useUserNames();
@@ -161,10 +195,15 @@ function ReturnSection() {
   const returnAssets = useReturnAssets();
   const [ownerId, setOwnerId] = useState<number | null>(null);
   const [selected, setSelected] = useState<ReadonlySet<number>>(new Set());
-  const [locationId, setLocationId] = useState<number | null>(null);
-  const [comment, setComment] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
   const owned = useAssets({ ownerId, status: "in_use", limit: 100, offset: 0 }, ownerId !== null);
+  const {
+    control,
+    handleSubmit,
+    setError,
+    reset,
+    formState: { isSubmitting },
+  } = useForm<ReturnFormValues>({ defaultValues: { location_id: null, comment: "" } });
 
   const toggle = (id: number) =>
     setSelected((current) => {
@@ -174,26 +213,31 @@ function ReturnSection() {
       return next;
     });
 
-  const submit = async () => {
-    setError(null);
+  const submit = handleSubmit(async (values) => {
+    setFormError(null);
     try {
       const returned = await returnAssets.mutateAsync({
         asset_ids: [...selected],
-        location_id: locationId,
-        comment: comment.trim() || null,
+        location_id: values.location_id,
+        comment: values.comment.trim() || null,
       });
       enqueueSnackbar(`Принято на склад: ${returned.length}`, { variant: "success" });
       setSelected(new Set());
-      setComment("");
+      reset({ location_id: null, comment: "" });
     } catch (caught) {
-      setSelected(new Set());
-      setError(
-        caught instanceof ApiError && caught.code === "assets_unavailable"
-          ? "Список техники изменился — он обновлён. Отметьте технику заново."
-          : errorMessage(caught),
+      if (caught instanceof ApiError && caught.code === "assets_unavailable") {
+        setSelected(new Set());
+        setFormError("Список техники изменился — он обновлён. Отметьте технику заново.");
+        return;
+      }
+      setFormError(
+        applyApiErrors(caught, setError, {
+          fields: ["location_id", "comment"],
+          fieldForError: returnFieldForError,
+        }),
       );
     }
-  };
+  });
 
   const items = owned.data?.items ?? [];
 
@@ -204,14 +248,14 @@ function ReturnSection() {
           <Typography variant="h5" component="h2">
             Принять
           </Typography>
-          {error && <Alert severity="error">{error}</Alert>}
+          {formError && <Alert severity="error">{formError}</Alert>}
           <EntityAutocomplete
             label="От кого"
             value={ownerId}
             onChange={(id) => {
               setOwnerId(id);
               setSelected(new Set());
-              setError(null);
+              setFormError(null);
             }}
             fetchOptions={searchActiveUserOptions}
             queryKey={ACTIVE_USER_OPTIONS_KEY}
@@ -234,25 +278,17 @@ function ReturnSection() {
               ))}
             </Stack>
           )}
-          <TextField
-            select
+          <FormSelect
+            control={control}
+            name="location_id"
             label="Локация (если меняется)"
-            value={locationId === null ? "" : String(locationId)}
-            onChange={(event) =>
-              setLocationId(event.target.value ? Number(event.target.value) : null)
-            }
-          >
-            <MenuItem value="">Не менять</MenuItem>
-            {(locations.data ?? []).map((item) => (
-              <MenuItem key={item.id} value={String(item.id)}>
-                {item.name}
-              </MenuItem>
-            ))}
-          </TextField>
-          <TextField
+            emptyLabel="Не менять"
+            options={(locations.data ?? []).map((item) => ({ value: item.id, label: item.name }))}
+          />
+          <FormTextField
+            control={control}
+            name="comment"
             label="Комментарий"
-            value={comment}
-            onChange={(event) => setComment(event.target.value)}
             multiline
             minRows={2}
           />
@@ -260,7 +296,7 @@ function ReturnSection() {
             <Button
               variant="contained"
               disabled={selected.size === 0}
-              loading={returnAssets.isPending}
+              loading={returnAssets.isPending || isSubmitting}
               onClick={() => void submit()}
             >
               Принять на склад
