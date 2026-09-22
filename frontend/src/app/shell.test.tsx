@@ -48,6 +48,10 @@ test("администратор видит раздел «Администри�
   );
   expect(within(nav).getByText("Администрирование")).toBeInTheDocument();
   expect(within(nav).getByRole("link", { name: "Выдать / принять" })).toBeInTheDocument();
+  expect(within(nav).getByRole("link", { name: "Расходники" })).toHaveAttribute(
+    "href",
+    "/equipment/stock",
+  );
   expect(screen.getByRole("heading", { name: "Главная" })).toBeInTheDocument();
   expect(screen.getByText("Здравствуйте, Иванов Иван")).toBeInTheDocument();
 });
@@ -61,7 +65,7 @@ test("сотрудник не видит раздел «Администриро
   expect(within(nav).queryByText("Администрирование")).not.toBeInTheDocument();
 });
 
-test("раздел «Склад и техника»: реестр всем, выдача только администратору", async () => {
+test("раздел «Склад и техника»: реестр всем, расходники и выдача только администратору", async () => {
   mockSignedIn(makeMe({ role: "manager" }));
   renderShell("/");
 
@@ -71,6 +75,7 @@ test("раздел «Склад и техника»: реестр всем, вы
     "/equipment/assets",
   );
   expect(within(nav).queryByRole("link", { name: "Выдать / принять" })).not.toBeInTheDocument();
+  expect(within(nav).queryByRole("link", { name: "Расходники" })).not.toBeInTheDocument();
 });
 
 test("неизвестный путь показывает страницу 404", async () => {

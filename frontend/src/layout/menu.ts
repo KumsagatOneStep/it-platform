@@ -4,6 +4,7 @@ import {
   IconBuildingCommunity,
   IconDeviceLaptop,
   IconLayoutDashboard,
+  IconPackage,
   IconUserCircle,
   IconUsers,
 } from "@tabler/icons-react";
@@ -35,6 +36,7 @@ export const MENU: readonly MenuSection[] = [
     title: "Склад и техника",
     items: [
       { label: "Реестр техники", to: "/equipment/assets", icon: IconDeviceLaptop },
+      { label: "Расходники", to: "/equipment/stock", icon: IconPackage, roles: ["admin"] },
       {
         label: "Выдать / принять",
         to: "/equipment/issue",

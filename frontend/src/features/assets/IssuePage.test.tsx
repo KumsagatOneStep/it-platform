@@ -213,7 +213,7 @@ test("приём: нельзя отметить больше 50 единиц т�
   expect(within(section).getByText("Не больше 50 единиц за раз")).toBeInTheDocument();
   const checkboxes = within(section).getAllByRole("checkbox") as HTMLInputElement[];
   expect(checkboxes.filter((box) => box.checked)).toHaveLength(50);
-});
+}, 15_000); // 51 клик: при параллельном прогоне всех файлов не укладывается в 5 с по умолчанию
 
 test("страница выдачи доступна только администратору", async () => {
   mockSignedIn(makeMe({ role: "manager" }));
