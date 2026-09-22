@@ -1381,6 +1381,37 @@
         "title": "Page[StockItemRead]",
         "type": "object"
       },
+      "Page_StockMovementRead_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/StockMovementRead"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "limit": {
+            "title": "Limit",
+            "type": "integer"
+          },
+          "offset": {
+            "title": "Offset",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "Page[StockMovementRead]",
+        "type": "object"
+      },
       "Page_UserRead_": {
         "properties": {
           "items": {
@@ -1483,6 +1514,39 @@
           "operation"
         ],
         "title": "StatusOperation",
+        "type": "object"
+      },
+      "StockAdjustmentOperation": {
+        "properties": {
+          "actual_quantity": {
+            "maximum": 1000000.0,
+            "minimum": 0.0,
+            "title": "Actual Quantity",
+            "type": "integer"
+          },
+          "comment": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Comment"
+          },
+          "operation": {
+            "const": "adjustment",
+            "title": "Operation",
+            "type": "string"
+          }
+        },
+        "required": [
+          "operation",
+          "actual_quantity"
+        ],
+        "title": "StockAdjustmentOperation",
         "type": "object"
       },
       "StockCategoryCreate": {
@@ -1745,6 +1809,303 @@
           "version"
         ],
         "title": "StockItemUpdate",
+        "type": "object"
+      },
+      "StockMovementRead": {
+        "properties": {
+          "comment": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Comment"
+          },
+          "counterpart_location_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Counterpart Location Id"
+          },
+          "counterpart_location_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Counterpart Location Name"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "delta": {
+            "title": "Delta",
+            "type": "integer"
+          },
+          "document_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Document Date"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "movement_type": {
+            "$ref": "#/components/schemas/StockMovementType"
+          },
+          "performed_by": {
+            "title": "Performed By",
+            "type": "integer"
+          },
+          "performed_by_name": {
+            "title": "Performed By Name",
+            "type": "string"
+          },
+          "quantity_after": {
+            "title": "Quantity After",
+            "type": "integer"
+          },
+          "reason_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason Id"
+          },
+          "reason_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason Name"
+          },
+          "recipient_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recipient Id"
+          },
+          "recipient_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recipient Name"
+          },
+          "stock_item_id": {
+            "title": "Stock Item Id",
+            "type": "integer"
+          },
+          "transfer_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Transfer Id"
+          }
+        },
+        "required": [
+          "id",
+          "stock_item_id",
+          "movement_type",
+          "delta",
+          "quantity_after",
+          "document_date",
+          "transfer_id",
+          "counterpart_location_id",
+          "counterpart_location_name",
+          "reason_id",
+          "reason_name",
+          "recipient_id",
+          "recipient_name",
+          "comment",
+          "performed_by",
+          "performed_by_name",
+          "created_at"
+        ],
+        "title": "StockMovementRead",
+        "type": "object"
+      },
+      "StockMovementType": {
+        "enum": [
+          "receipt",
+          "issue",
+          "write_off",
+          "adjustment",
+          "transfer_out",
+          "transfer_in"
+        ],
+        "title": "StockMovementType",
+        "type": "string"
+      },
+      "StockReceiptOperation": {
+        "properties": {
+          "comment": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Comment"
+          },
+          "document_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Document Date"
+          },
+          "operation": {
+            "const": "receipt",
+            "title": "Operation",
+            "type": "string"
+          },
+          "quantity": {
+            "maximum": 1000000.0,
+            "minimum": 1.0,
+            "title": "Quantity",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "operation",
+          "quantity"
+        ],
+        "title": "StockReceiptOperation",
+        "type": "object"
+      },
+      "StockTransferOperation": {
+        "properties": {
+          "comment": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Comment"
+          },
+          "operation": {
+            "const": "transfer",
+            "title": "Operation",
+            "type": "string"
+          },
+          "quantity": {
+            "maximum": 1000000.0,
+            "minimum": 1.0,
+            "title": "Quantity",
+            "type": "integer"
+          },
+          "to_location_id": {
+            "title": "To Location Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "operation",
+          "quantity",
+          "to_location_id"
+        ],
+        "title": "StockTransferOperation",
+        "type": "object"
+      },
+      "StockWriteOffOperation": {
+        "properties": {
+          "comment": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Comment"
+          },
+          "operation": {
+            "const": "write_off",
+            "title": "Operation",
+            "type": "string"
+          },
+          "quantity": {
+            "maximum": 1000000.0,
+            "minimum": 1.0,
+            "title": "Quantity",
+            "type": "integer"
+          },
+          "reason_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason Id"
+          }
+        },
+        "required": [
+          "operation",
+          "quantity"
+        ],
+        "title": "StockWriteOffOperation",
         "type": "object"
       },
       "TemporaryPasswordResponse": {
@@ -5401,6 +5762,187 @@
           }
         ],
         "summary": "Update Stock Item",
+        "tags": [
+          "stock"
+        ]
+      }
+    },
+    "/api/stock-items/{item_id}/movements": {
+      "get": {
+        "operationId": "list_stock_movements_api_stock_items__item_id__movements_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "item_id",
+            "required": true,
+            "schema": {
+              "title": "Item Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_StockMovementRead_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Некорректные данные запроса"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Ошибка запроса"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Внутренняя ошибка сервера"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Stock Movements",
+        "tags": [
+          "stock"
+        ]
+      }
+    },
+    "/api/stock-items/{item_id}/operations": {
+      "post": {
+        "operationId": "apply_stock_operation_api_stock_items__item_id__operations_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "item_id",
+            "required": true,
+            "schema": {
+              "title": "Item Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/StockReceiptOperation"
+                  },
+                  {
+                    "$ref": "#/components/schemas/StockWriteOffOperation"
+                  },
+                  {
+                    "$ref": "#/components/schemas/StockAdjustmentOperation"
+                  },
+                  {
+                    "$ref": "#/components/schemas/StockTransferOperation"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StockItemRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Некорректные данные запроса"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Ошибка запроса"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Внутренняя ошибка сервера"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Apply Stock Operation",
         "tags": [
           "stock"
         ]

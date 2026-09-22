@@ -639,6 +639,40 @@ export interface paths {
         patch: operations["update_stock_item_api_stock_items__item_id__patch"];
         trace?: never;
     };
+    "/api/stock-items/{item_id}/movements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Stock Movements */
+        get: operations["list_stock_movements_api_stock_items__item_id__movements_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/stock-items/{item_id}/operations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Apply Stock Operation */
+        post: operations["apply_stock_operation_api_stock_items__item_id__operations_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/users": {
         parameters: {
             query?: never;
@@ -1092,6 +1126,17 @@ export interface components {
             /** Total */
             total: number;
         };
+        /** Page[StockMovementRead] */
+        Page_StockMovementRead_: {
+            /** Items */
+            items: components["schemas"]["StockMovementRead"][];
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
+            /** Total */
+            total: number;
+        };
         /** Page[UserRead] */
         Page_UserRead_: {
             /** Items */
@@ -1130,6 +1175,18 @@ export interface components {
              * @enum {string}
              */
             operation: "reserve" | "unreserve" | "to_repair" | "repair_to_owner";
+        };
+        /** StockAdjustmentOperation */
+        StockAdjustmentOperation: {
+            /** Actual Quantity */
+            actual_quantity: number;
+            /** Comment */
+            comment?: string | null;
+            /**
+             * Operation
+             * @constant
+             */
+            operation: "adjustment";
         };
         /** StockCategoryCreate */
         StockCategoryCreate: {
@@ -1222,6 +1279,92 @@ export interface components {
             unit?: string | null;
             /** Version */
             version: number;
+        };
+        /** StockMovementRead */
+        StockMovementRead: {
+            /** Comment */
+            comment: string | null;
+            /** Counterpart Location Id */
+            counterpart_location_id: number | null;
+            /** Counterpart Location Name */
+            counterpart_location_name: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Delta */
+            delta: number;
+            /** Document Date */
+            document_date: string | null;
+            /** Id */
+            id: number;
+            movement_type: components["schemas"]["StockMovementType"];
+            /** Performed By */
+            performed_by: number;
+            /** Performed By Name */
+            performed_by_name: string;
+            /** Quantity After */
+            quantity_after: number;
+            /** Reason Id */
+            reason_id: number | null;
+            /** Reason Name */
+            reason_name: string | null;
+            /** Recipient Id */
+            recipient_id: number | null;
+            /** Recipient Name */
+            recipient_name: string | null;
+            /** Stock Item Id */
+            stock_item_id: number;
+            /** Transfer Id */
+            transfer_id: string | null;
+        };
+        /**
+         * StockMovementType
+         * @enum {string}
+         */
+        StockMovementType: "receipt" | "issue" | "write_off" | "adjustment" | "transfer_out" | "transfer_in";
+        /** StockReceiptOperation */
+        StockReceiptOperation: {
+            /** Comment */
+            comment?: string | null;
+            /** Document Date */
+            document_date?: string | null;
+            /**
+             * Operation
+             * @constant
+             */
+            operation: "receipt";
+            /** Quantity */
+            quantity: number;
+        };
+        /** StockTransferOperation */
+        StockTransferOperation: {
+            /** Comment */
+            comment?: string | null;
+            /**
+             * Operation
+             * @constant
+             */
+            operation: "transfer";
+            /** Quantity */
+            quantity: number;
+            /** To Location Id */
+            to_location_id: number;
+        };
+        /** StockWriteOffOperation */
+        StockWriteOffOperation: {
+            /** Comment */
+            comment?: string | null;
+            /**
+             * Operation
+             * @constant
+             */
+            operation: "write_off";
+            /** Quantity */
+            quantity: number;
+            /** Reason Id */
+            reason_id?: number | null;
         };
         /** TemporaryPasswordResponse */
         TemporaryPasswordResponse: {
@@ -3496,6 +3639,111 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["StockItemUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StockItemRead"];
+                };
+            };
+            /** @description Некорректные данные запроса */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Внутренняя ошибка сервера */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Ошибка запроса */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    list_stock_movements_api_stock_items__item_id__movements_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                item_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_StockMovementRead_"];
+                };
+            };
+            /** @description Некорректные данные запроса */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Внутренняя ошибка сервера */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Ошибка запроса */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    apply_stock_operation_api_stock_items__item_id__operations_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StockReceiptOperation"] | components["schemas"]["StockWriteOffOperation"] | components["schemas"]["StockAdjustmentOperation"] | components["schemas"]["StockTransferOperation"];
             };
         };
         responses: {

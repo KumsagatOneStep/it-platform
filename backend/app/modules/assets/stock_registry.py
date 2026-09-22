@@ -1,5 +1,6 @@
 """Позиции расходников: список, карточка, создание и правка (остаток меняют только движения)."""
 
+import uuid
 from dataclasses import dataclass
 from typing import Any, NoReturn
 
@@ -13,7 +14,7 @@ from app.core.errors import ConflictError, NotFoundError
 from app.core.text import normalize_text_field
 from app.modules.assets.checks import check_location, check_stock_category
 from app.modules.assets.history import changed_fields
-from app.modules.assets.stock_models import StockItem
+from app.modules.assets.stock_models import StockItem, StockMovement, StockMovementType
 
 ENTITY_TYPE = "stock_item"
 
@@ -69,7 +70,8 @@ async def get_stock_item(
 ) -> StockItem:
     stmt = select(StockItem).where(StockItem.id == item_id)
     if for_update:
-        stmt = stmt.with_for_update()
+        # populate_existing: перечитать остаток под блокировкой, даже если объект уже в сессии.
+        stmt = stmt.with_for_update().execution_options(populate_existing=True)
     item = await session.scalar(stmt)
     if item is None:
         raise NotFoundError("Позиция не найдена", code="stock_item_not_found")
@@ -167,3 +169,39 @@ async def update_stock_item(
     )
     await session.commit()
     return item
+
+
+async def list_movements(
+    session: AsyncSession, item_id: int, *, limit: int, offset: int
+) -> tuple[list[StockMovement], int]:
+    await get_stock_item(session, item_id)
+    condition = StockMovement.stock_item_id == item_id
+    total = (
+        await session.scalar(select(func.count()).select_from(StockMovement).where(condition)) or 0
+    )
+    rows = await session.scalars(
+        select(StockMovement)
+        .where(condition)
+        .order_by(StockMovement.id.desc())
+        .limit(limit)
+        .offset(offset)
+    )
+    return list(rows), total
+
+
+async def transfer_locations(
+    session: AsyncSession, transfer_ids: set[uuid.UUID]
+) -> dict[tuple[uuid.UUID, StockMovementType], int]:
+    """Склад каждой половины перемещения: (transfer_id, тип движения) → location_id."""
+    if not transfer_ids:
+        return {}
+    rows = await session.execute(
+        select(StockMovement.transfer_id, StockMovement.movement_type, StockItem.location_id)
+        .join(StockItem, StockItem.id == StockMovement.stock_item_id)
+        .where(StockMovement.transfer_id.in_(transfer_ids))
+    )
+    return {
+        (transfer_id, movement_type): location_id
+        for transfer_id, movement_type, location_id in rows.tuples()
+        if transfer_id is not None
+    }
