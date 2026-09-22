@@ -1,7 +1,10 @@
 import importlib
 
 # Модули, которые при импорте подписывают обработчики на event_bus.
-HANDLER_MODULES: tuple[str, ...] = ("app.modules.directories.handlers",)
+HANDLER_MODULES: tuple[str, ...] = (
+    "app.modules.assets.handlers",
+    "app.modules.directories.handlers",
+)
 
 
 def register_event_handlers() -> None:

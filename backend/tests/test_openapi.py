@@ -21,5 +21,7 @@ def test_openapi_contains_core_paths() -> None:
         "/api/admin/users",
         "/api/departments",
         "/api/directories/locations",
+        "/api/assets",
+        "/api/assets/{asset_id}/operations",
     ):
         assert path in paths
