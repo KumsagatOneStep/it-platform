@@ -125,7 +125,7 @@ test("приём: техника сотрудника в работе, отме�
   expect(body).toEqual({ asset_ids: [101], location_id: 6, comment: null });
 });
 
-test("приём: ошибка не 409 не сбрасывает отмеченную технику", async () => {
+test("приём: ошибка не assets_unavailable не сбрасывает отмеченную технику", async () => {
   mockSignedIn();
   mockAssetLookups();
   server.use(
@@ -153,6 +153,59 @@ test("приём: ошибка не 409 не сбрасывает отмечен
 
   expect(await within(section).findByText("Операция недоступна")).toBeInTheDocument();
   expect(checkbox).toBeChecked();
+});
+
+test("приём: после очистки «От кого» техника прежнего сотрудника пропадает со страницы", async () => {
+  mockSignedIn();
+  mockAssetLookups();
+  server.use(
+    http.get("*/api/assets", ({ request }) => {
+      const url = new URL(request.url);
+      expect(url.searchParams.get("owner_id")).toBe("10");
+      return HttpResponse.json(
+        page(FREE.map((asset) => ({ ...asset, status: "in_use" as const, owner_id: 10 }))),
+      );
+    }),
+  );
+  const { user } = renderApp("/equipment/issue");
+
+  const section = await screen.findByRole("region", { name: "Принять" });
+  await pickEmployee(user, section, "От кого");
+  expect(await within(section).findByLabelText("INV-002 — Dell Latitude")).toBeInTheDocument();
+
+  await user.click(within(section).getByRole("button", { name: "Очистить" }));
+
+  expect(within(section).queryByLabelText("INV-002 — Dell Latitude")).not.toBeInTheDocument();
+  expect(within(section).queryByText("У сотрудника нет техники в работе")).not.toBeInTheDocument();
+});
+
+test("приём: нельзя отметить больше 50 единиц техники за раз", async () => {
+  mockSignedIn();
+  mockAssetLookups();
+  const many = Array.from({ length: 51 }, (_, index) =>
+    makeAsset({
+      id: 200 + index,
+      inventory_number: `INV-${200 + index}`,
+      status: "in_use",
+      owner_id: 10,
+    }),
+  );
+  server.use(http.get("*/api/assets", () => HttpResponse.json(page(many, many.length))));
+  const { user } = renderApp("/equipment/issue");
+
+  const section = await screen.findByRole("region", { name: "Принять" });
+  await pickEmployee(user, section, "От кого");
+  await within(section).findByLabelText("INV-200 — Lenovo ThinkPad T14");
+
+  for (const asset of many) {
+    await user.click(
+      within(section).getByLabelText(`${asset.inventory_number} — Lenovo ThinkPad T14`),
+    );
+  }
+
+  expect(within(section).getByText("Не больше 50 единиц за раз")).toBeInTheDocument();
+  const checkboxes = within(section).getAllByRole("checkbox") as HTMLInputElement[];
+  expect(checkboxes.filter((box) => box.checked)).toHaveLength(50);
 });
 
 test("страница выдачи доступна только администратору", async () => {

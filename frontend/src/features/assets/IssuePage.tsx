@@ -32,6 +32,10 @@ import type { Asset } from "./labels";
 const errorMessage = (error: unknown) =>
   error instanceof ApiError ? error.message : UNKNOWN_ERROR_MESSAGE;
 
+/** Backend принимает 1..50 asset_ids за раз (issue/return). */
+const MAX_BULK_SELECTION = 50;
+const BULK_LIMIT_MESSAGE = `Не больше ${MAX_BULK_SELECTION} единиц за раз`;
+
 /** Элемент details ошибки assets_unavailable (backend: UnavailableAsset). */
 interface UnavailableAsset {
   asset_id: number;
@@ -142,8 +146,13 @@ function IssueSection() {
               <AssetMultiPicker
                 value={field.value}
                 onChange={(next) => {
+                  if (next.length > MAX_BULK_SELECTION) {
+                    setFormError(BULK_LIMIT_MESSAGE);
+                    return;
+                  }
                   field.onChange(next);
                   setUnavailable(new Set());
+                  setFormError(null);
                 }}
                 unavailableIds={unavailable}
                 error={fieldState.error?.message}
@@ -208,8 +217,17 @@ function ReturnSection() {
   const toggle = (id: number) =>
     setSelected((current) => {
       const next = new Set(current);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
+      if (next.has(id)) {
+        next.delete(id);
+        setFormError(null);
+        return next;
+      }
+      if (next.size >= MAX_BULK_SELECTION) {
+        setFormError(BULK_LIMIT_MESSAGE);
+        return current;
+      }
+      next.add(id);
+      setFormError(null);
       return next;
     });
 
@@ -239,7 +257,11 @@ function ReturnSection() {
     }
   });
 
-  const items = owned.data?.items ?? [];
+  // keepPreviousData у useAssets держит список прежнего сотрудника, пока грузится новый
+  // (или пока owner не выбран вовсе) — без этой проверки его можно отметить и вернуть по чужому id.
+  const items = ownerId !== null && !owned.isPlaceholderData ? (owned.data?.items ?? []) : [];
+  const showEmpty =
+    ownerId !== null && owned.isSuccess && !owned.isPlaceholderData && items.length === 0;
 
   return (
     <Card variant="outlined">
@@ -261,7 +283,7 @@ function ReturnSection() {
             queryKey={ACTIVE_USER_OPTIONS_KEY}
             labelFor={nameOf}
           />
-          {ownerId !== null && owned.isSuccess && items.length === 0 && (
+          {showEmpty && (
             <Typography color="text.secondary">У сотрудника нет техники в работе</Typography>
           )}
           {owned.error && <Alert severity="error">{errorMessage(owned.error)}</Alert>}
